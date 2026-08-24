@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512" role="img" aria-label="教育資金贈与マネージャー">
+  <rect x="0" y="0" width="512" height="512" rx="112.64" fill="#16705a"/>
+  <polygon points="149.5,102.4 186.37,102.4 274.43,220.16 237.57,220.16" fill="#ffffff" fill-opacity="1"/>
+  <polygon points="362.5,102.4 325.63,102.4 237.57,220.16 274.43,220.16" fill="#ffffff" fill-opacity="1"/>
+  <rect x="237.57" y="209.92" width="36.86" height="138.24" rx="18.43" fill="#ffffff" fill-opacity="1"/>
+  <rect x="166.4" y="251.9" width="179.2" height="28.67" rx="14.34" fill="#ffffff" fill-opacity="1"/>
+  <rect x="166.4" y="294.91" width="179.2" height="28.67" rx="14.34" fill="#ffffff" fill-opacity="1"/>
+  <rect x="112.64" y="386.56" width="286.72" height="28.16" rx="14.08" fill="#ffffff" fill-opacity="0.34"/>
+  <rect x="112.64" y="386.56" width="168.96" height="28.16" rx="14.08" fill="#ffffff" fill-opacity="1"/>
+</svg>

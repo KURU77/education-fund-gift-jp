@@ -1,0 +1,39 @@
+{
+  "name": "教育資金贈与マネージャー",
+  "short_name": "教育資金贈与",
+  "description": "教育資金の一括贈与（非課税措置）の原資と使い道を記録し、残りの非課税枠と30歳満期時にかかる贈与税・手元に残る金額を計算します。",
+  "lang": "ja",
+  "dir": "ltr",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#16705a",
+  "theme_color": "#16705a",
+  "categories": ["finance", "education", "utilities"],
+  "icons": [
+    {
+      "src": "assets/favicon-32.png",
+      "sizes": "32x32",
+      "type": "image/png"
+    },
+    {
+      "src": "assets/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "assets/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "assets/icon-maskable-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ]
+}

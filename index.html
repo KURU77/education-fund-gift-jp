@@ -2,8 +2,24 @@
 <html lang="ja">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<title>教育資金贈与マネージャー</title>
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>教育資金贈与マネージャー — 非課税枠と30歳満期の贈与税を自動計算</title>
+<meta name="description" content="教育資金の一括贈与（非課税措置）の原資と使い道を「学校等」「学校等以外」に分けて記録し、残りの非課税枠と、30歳の満期時にかかる贈与税・手元に残る金額を計算します。">
+<meta name="color-scheme" content="light dark">
+<meta name="theme-color" content="#f6f7f9" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#12151a" media="(prefers-color-scheme: dark)">
+<meta property="og:title" content="教育資金贈与マネージャー">
+<meta property="og:description" content="非課税枠1,500万円／うち学校等以外500万円の残りと、30歳満期の贈与税・手元に残る金額を自動計算。">
+<meta property="og:type" content="website">
+<meta property="og:url" content="https://kuru77.github.io/education-fund-gift-jp/">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="教育資金贈与">
+<link rel="icon" href="assets/icon.svg" type="image/svg+xml">
+<link rel="icon" href="assets/favicon-32.png" sizes="32x32">
+<link rel="apple-touch-icon" href="assets/apple-touch-icon.png">
+<link rel="manifest" href="manifest.webmanifest">
 <style>
 :root{
   --bg:#f6f7f9; --panel:#ffffff; --panel2:#fbfcfd; --line:#e3e7ec;
@@ -23,12 +39,26 @@
   }
 }
 *{box-sizing:border-box}
+html{
+  -webkit-text-size-adjust:100%;      /* iPhone を横向きにしたときの勝手な拡大を止める */
+  background:var(--bg);               /* 慣性スクロールで端が出たときの色 */
+}
 body{
   margin:0; background:var(--bg); color:var(--text);
   font-family:"Hiragino Kaku Gothic ProN","Yu Gothic UI","Meiryo",system-ui,sans-serif;
   font-size:14px; line-height:1.6;
+  overflow-x:hidden;
+  -webkit-tap-highlight-color:transparent;
 }
-.wrap{max-width:1080px; margin:0 auto; padding:24px 16px 80px}
+.wrap{
+  max-width:1080px; margin:0 auto;
+  /* ノッチ・Dynamic Island・ホームインジケータを避ける（対応外の環境では 0 として扱われる） */
+  padding:
+    calc(24px + env(safe-area-inset-top))
+    calc(16px + env(safe-area-inset-right))
+    calc(80px + env(safe-area-inset-bottom))
+    calc(16px + env(safe-area-inset-left));
+}
 header.top{margin-bottom:20px}
 header.top h1{font-size:20px; margin:0 0 4px}
 header.top p{margin:0; color:var(--muted); font-size:12.5px}
@@ -53,19 +83,37 @@ header.top p{margin:0; color:var(--muted); font-size:12.5px}
 label.f{display:block; font-size:11.5px; color:var(--muted); margin-bottom:4px}
 input,select,button,textarea{font:inherit; color:inherit}
 input,select{
-  width:100%; padding:8px 10px; border:1px solid var(--line); border-radius:8px;
+  width:100%; padding:9px 10px; border:1px solid var(--line); border-radius:8px;
   background:var(--panel2);
+  /* iOS はフォントが16px未満の入力欄にフォーカスすると画面を勝手に拡大するので、下回らせない */
+  font-size:16px; line-height:1.4; min-height:44px;
+}
+select{
+  -webkit-appearance:none; appearance:none; padding-right:32px;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 8'%3E%3Cpath d='M1 1.5 6 6.5 11 1.5' fill='none' stroke='%236b7787' stroke-width='1.6' stroke-linecap='round'/%3E%3C/svg%3E");
+  background-repeat:no-repeat; background-position:right 11px center; background-size:11px;
+}
+/* iOS の日付欄は既定だと高さが潰れて中身が見切れるため、明示的に組み直す */
+input[type=date]{
+  -webkit-appearance:none; appearance:none;
+  display:flex; align-items:center; text-align:left;
 }
 input:focus,select:focus{outline:2px solid var(--accent-soft); border-color:var(--accent)}
 input[type=number]{text-align:right; font-variant-numeric:tabular-nums}
 button{
   border:1px solid var(--line); background:var(--panel2); border-radius:8px;
-  padding:8px 14px; cursor:pointer;
+  padding:8px 14px; cursor:pointer; min-height:40px;
+  touch-action:manipulation;          /* ダブルタップ拡大を無効にして、連続タップを取りこぼさない */
+  -webkit-user-select:none; user-select:none;
 }
 button:hover{border-color:var(--accent); color:var(--accent)}
 button.primary{background:var(--accent); border-color:var(--accent); color:#fff}
 button.primary:hover{opacity:.9; color:#fff}
-button.mini{padding:3px 8px; font-size:11.5px; border-radius:6px}
+button:active{transform:scale(.98)}
+button.mini{padding:3px 10px; font-size:11.5px; border-radius:6px; min-height:0}
+/* 入力欄の下に出す「＝○○万円」の確認表示。桁を数え間違えたときに気づくためのもの */
+.echo{font-size:11.5px; color:var(--accent); margin-top:4px; min-height:1.2em; font-variant-numeric:tabular-nums}
+.echo:empty{min-height:0}
 .hint{font-size:11.5px; color:var(--muted); margin-top:6px}
 table{width:100%; border-collapse:collapse; font-variant-numeric:tabular-nums}
 th,td{padding:7px 8px; border-bottom:1px solid var(--line); text-align:left; font-size:13px}
@@ -113,6 +161,66 @@ tbody tr:hover{background:var(--panel2)}
 footer.note{color:var(--muted); font-size:11.5px; line-height:1.8; margin-top:24px}
 footer.note b{color:var(--text)}
 .subhead{font-size:12px; color:var(--muted); font-weight:600; margin:16px 0 8px; letter-spacing:.03em}
+
+/* ── 更新のお知らせ／ホーム画面への追加の案内 ───────────────── */
+.banner{
+  position:fixed; left:12px; right:12px; z-index:20;
+  bottom:calc(12px + env(safe-area-inset-bottom));
+  background:var(--panel); border:1px solid var(--line); border-radius:12px;
+  padding:12px 14px; font-size:12.5px;
+  box-shadow:0 8px 28px rgba(0,0,0,.18);
+  display:flex; align-items:center; gap:10px;
+}
+.banner[hidden]{display:none}
+.banner p{margin:0; flex:1}
+.banner button{padding:6px 12px; font-size:12.5px; min-height:36px; white-space:nowrap}
+@media(min-width:761px){ .banner{left:auto; right:20px; max-width:380px} }
+
+/* ── iPhone など、指で操作する狭い画面 ───────────────────── */
+@media(max-width:760px){
+  .wrap{padding-top:calc(16px + env(safe-area-inset-top))}
+  header.top h1{font-size:18px}
+  .card{padding:14px; border-radius:14px}
+  /* 指で押せる大きさを確保する（Appleの目安は44pt四方） */
+  button{min-height:46px; padding:10px 16px}
+  button.mini{min-height:38px; padding:6px 14px; font-size:12.5px}
+  .kpi .v{font-size:18px}
+  .toolbar button{flex:1 1 46%}
+  .toolbar .spacer{display:none}
+  .toolbar #resetAll{flex-basis:100%}
+}
+
+/* ── 表を1件ずつのカードに組み替える ─────────────────────
+   430px 幅に5列は入らないので、見出しを各行の中へ畳み込む。 */
+@media(max-width:560px){
+  table{display:block}
+  thead{display:none}
+  tbody{display:block}
+  tbody tr{
+    display:block; background:var(--panel2);
+    border:1px solid var(--line); border-radius:10px;
+    padding:8px 12px; margin-bottom:8px;
+  }
+  tbody tr:hover{background:var(--panel2)}
+  tbody td{
+    display:flex; justify-content:space-between; align-items:center; gap:12px;
+    border-bottom:none; padding:4px 0; text-align:left;
+  }
+  tbody td::before{
+    content:attr(data-label);
+    color:var(--muted); font-size:11.5px; flex:0 0 auto;
+  }
+  tbody td.num{text-align:right}
+  tbody td.empty::before,
+  tbody tr.totalrow td::before{content:none}
+  tbody td.empty{display:block; text-align:center}
+  tbody td.act{justify-content:flex-end; padding-top:8px}
+  tbody tr.totalrow{
+    display:flex; justify-content:space-between; align-items:baseline;
+    background:var(--accent-soft); border-color:transparent;
+  }
+  tbody tr.totalrow td{display:block; padding:0}
+}
 </style>
 </head>
 <body>
@@ -158,7 +266,8 @@ footer.note b{color:var(--text)}
     </div>
     <div>
       <label class="f" for="cAmt">金額（円）</label>
-      <input type="number" id="cAmt" min="0" step="1000" placeholder="10000000">
+      <input type="number" id="cAmt" min="0" step="1000" inputmode="numeric" placeholder="10000000">
+      <div class="echo" id="cAmtEcho"></div>
     </div>
     <div style="display:flex; align-items:flex-end">
       <button class="primary" id="addC" style="width:100%">原資を追加</button>
@@ -194,7 +303,8 @@ footer.note b{color:var(--text)}
     </div>
     <div>
       <label class="f" for="sAmt">金額（円）</label>
-      <input type="number" id="sAmt" min="0" step="100" placeholder="300000">
+      <input type="number" id="sAmt" min="0" step="100" inputmode="numeric" placeholder="300000">
+      <div class="echo" id="sAmtEcho"></div>
     </div>
   </div>
   <div style="margin-top:12px"><button class="primary" id="addS">支出を追加</button></div>
@@ -240,15 +350,18 @@ footer.note b{color:var(--text)}
   <div class="grid g4">
     <div>
       <label class="f" for="pSchool">満期までの追加支出見込み：学校等（円）</label>
-      <input type="number" id="pSchool" min="0" step="10000" value="0">
+      <input type="number" id="pSchool" min="0" step="10000" inputmode="numeric" value="0">
+      <div class="echo" id="pSchoolEcho"></div>
     </div>
     <div>
       <label class="f" for="pOther">同：学校等以外（円）</label>
-      <input type="number" id="pOther" min="0" step="10000" value="0">
+      <input type="number" id="pOther" min="0" step="10000" inputmode="numeric" value="0">
+      <div class="echo" id="pOtherEcho"></div>
     </div>
     <div>
       <label class="f" for="otherGift">満期年のその他の贈与額（円）</label>
-      <input type="number" id="otherGift" min="0" step="10000" value="0">
+      <input type="number" id="otherGift" min="0" step="10000" inputmode="numeric" value="0">
+      <div class="echo" id="otherGiftEcho"></div>
     </div>
     <div>
       <label class="f" for="otherGiftType">その他の贈与の税率区分</label>
@@ -302,6 +415,17 @@ footer.note b{color:var(--text)}
   ・本アプリは概算用であり、正式な金額・申告要否は三井住友信託銀行および税理士・税務署にご確認ください。
 </footer>
 
+</div>
+
+<div class="banner" id="updateBanner" hidden role="status">
+  <p>新しいバージョンがあります。</p>
+  <button type="button" id="updateNow">更新</button>
+  <button type="button" id="updateLater" class="mini">あとで</button>
+</div>
+
+<div class="banner" id="installBanner" hidden>
+  <p>ホーム画面に追加すると、電波がなくても開けます。共有ボタン → 「ホーム画面に追加」</p>
+  <button type="button" id="installDismiss" class="mini">閉じる</button>
 </div>
 
 <script>
@@ -437,6 +561,7 @@ function render(){
   $("pOther").value = state.plan.other;
   $("otherGift").value = state.plan.otherGift;
   $("otherGiftType").value = state.plan.otherGiftType;
+  ["pSchool","pOther","otherGift"].forEach(syncEcho);
 
   renderAge();
   renderContribs();
@@ -467,16 +592,17 @@ function renderContribs(){
       const isGen = (c.date||"") >= GENERAL_RATE_FROM;
       const tr = document.createElement("tr");
       tr.innerHTML =
-        "<td>"+fmtDate(c.date)+"</td>"+
-        "<td>"+esc(c.from||"–")+"</td>"+
-        '<td class="num">'+yen(c.amount)+"</td>"+
-        "<td>"+(isGen?"一般税率":"特例税率")+"</td>"+
-        '<td class="num"><button class="mini" data-del-c="'+c.id+'">削除</button></td>';
+        '<td data-label="拠出日">'+fmtDate(c.date)+"</td>"+
+        '<td data-label="贈与者">'+esc(c.from||"–")+"</td>"+
+        '<td class="num" data-label="金額">'+yen(c.amount)+"</td>"+
+        '<td data-label="税率区分">'+(isGen?"一般税率":"特例税率")+"</td>"+
+        '<td class="num act"><button class="mini" data-del-c="'+c.id+'">削除</button></td>';
       tb.appendChild(tr);
     }
     const total = list.reduce((a,c)=>a+c.amount,0);
     const tr = document.createElement("tr");
-    tr.innerHTML = '<td colspan="2" style="font-weight:600">合計</td><td class="num" style="font-weight:700">'+yen(total)+'</td><td colspan="2"></td>';
+    tr.className = "totalrow";
+    tr.innerHTML = '<td colspan="2" style="font-weight:600">合計</td><td class="num" colspan="3" style="font-weight:700">'+yen(total)+'</td>';
     tb.appendChild(tr);
   }
   const p = state.contributions.reduce((a,c)=>a+c.amount,0);
@@ -493,11 +619,11 @@ function renderSpends(){
     for(const s of list){
       const tr = document.createElement("tr");
       tr.innerHTML =
-        "<td>"+fmtDate(s.date)+"</td>"+
-        '<td><span class="tag '+(s.cat==="school"?"school":"other")+'">'+(s.cat==="school"?"学校等":"学校等以外")+"</span></td>"+
-        "<td>"+esc(s.memo||"–")+"</td>"+
-        '<td class="num">'+yen(s.amount)+"</td>"+
-        '<td class="num"><button class="mini" data-del-s="'+s.id+'">削除</button></td>';
+        '<td data-label="支払日">'+fmtDate(s.date)+"</td>"+
+        '<td data-label="区分"><span class="tag '+(s.cat==="school"?"school":"other")+'">'+(s.cat==="school"?"学校等":"学校等以外")+"</span></td>"+
+        '<td data-label="内容">'+esc(s.memo||"–")+"</td>"+
+        '<td class="num" data-label="金額">'+yen(s.amount)+"</td>"+
+        '<td class="num act"><button class="mini" data-del-s="'+s.id+'">削除</button></td>';
       tb.appendChild(tr);
     }
   }
@@ -615,9 +741,20 @@ function today(){ return new Date().toISOString().slice(0,10); }
 ["birth","recipient","contractDate"].forEach(id=>{
   $(id).addEventListener("change", ()=>{ state[id]=$(id).value; save(); render(); });
 });
+/** 入力欄の下に「＝○○万円」を出す。スマホで0の数を打ち間違えたときに気づくため。 */
+function syncEcho(id){
+  const el = $(id+"Echo"); if(!el) return;
+  const v = num($(id));
+  el.textContent = v>0 ? "＝ "+man(v) : "";
+}
+["cAmt","sAmt"].forEach(id=>{
+  $(id).addEventListener("input", ()=>syncEcho(id));
+});
 ["pSchool","pOther","otherGift"].forEach(id=>{
   const key = {pSchool:"school", pOther:"other", otherGift:"otherGift"}[id];
-  $(id).addEventListener("input", ()=>{ state.plan[key]=num($(id)); save(); renderMaturity(compute(0,0)); });
+  $(id).addEventListener("input", ()=>{
+    state.plan[key]=num($(id)); save(); syncEcho(id); renderMaturity(compute(0,0));
+  });
 });
 $("otherGiftType").addEventListener("change", ()=>{
   state.plan.otherGiftType = $("otherGiftType").value; save(); renderMaturity(compute(0,0));
@@ -627,7 +764,7 @@ $("addC").addEventListener("click", ()=>{
   const amt = num($("cAmt"));
   if(!amt){ alert("金額を入力してください。"); return; }
   state.contributions.push({id:uid(), date:$("cDate").value||today(), from:$("cFrom").value.trim(), amount:amt});
-  $("cAmt").value=""; $("cFrom").value="";
+  $("cAmt").value=""; $("cFrom").value=""; syncEcho("cAmt");
   save(); render();
 });
 
@@ -635,7 +772,7 @@ $("addS").addEventListener("click", ()=>{
   const amt = num($("sAmt"));
   if(!amt){ alert("金額を入力してください。"); return; }
   state.spends.push({id:uid(), date:$("sDate").value||today(), cat:$("sCat").value, memo:$("sMemo").value.trim(), amount:amt});
-  $("sAmt").value=""; $("sMemo").value="";
+  $("sAmt").value=""; $("sMemo").value=""; syncEcho("sAmt");
   save(); render();
 });
 
@@ -687,6 +824,56 @@ $("resetAll").addEventListener("click", ()=>{
     state = load(); render();
   }
 });
+
+// ---- Service Worker（オフライン対応）----
+function showUpdate(worker){
+  const b = $("updateBanner"); if(!b || !worker) return;
+  b.hidden = false;
+  $("updateNow").onclick   = ()=>{ b.hidden = true; worker.postMessage("skip-waiting"); };
+  $("updateLater").onclick = ()=>{ b.hidden = true; };
+}
+
+if("serviceWorker" in navigator && location.protocol.startsWith("http")){
+  // 初回登録では claim() でも controllerchange が飛ぶので、
+  // 「もともと制御されていたか」を先に見ておき、更新のときだけ読み直す。
+  const hadController = !!navigator.serviceWorker.controller;
+  let reloading = false;
+  navigator.serviceWorker.addEventListener("controllerchange", ()=>{
+    if(!hadController || reloading) return;
+    reloading = true;
+    location.reload();
+  });
+  addEventListener("load", ()=>{
+    navigator.serviceWorker.register("sw.js").then(reg=>{
+      if(reg.waiting && hadController) showUpdate(reg.waiting);
+      reg.addEventListener("updatefound", ()=>{
+        const sw = reg.installing;
+        if(!sw) return;
+        sw.addEventListener("statechange", ()=>{
+          if(sw.state === "installed" && navigator.serviceWorker.controller) showUpdate(sw);
+        });
+      });
+    }).catch(()=>{});
+  });
+}
+
+// ---- iPhone 向け：ホーム画面への追加の案内 ----
+// iOS には beforeinstallprompt がないため、手順を文章で出すしかない。
+(function(){
+  const b = $("installBanner"); if(!b) return;
+  const ua = navigator.userAgent;
+  const isIOS = /iPhone|iPad|iPod/.test(ua) || (/Macintosh/.test(ua) && "ontouchend" in document);
+  const standalone = navigator.standalone === true ||
+                     (window.matchMedia && matchMedia("(display-mode: standalone)").matches);
+  let dismissed = false;
+  try{ dismissed = localStorage.getItem(KEY+":install-hint") === "off"; }catch(e){}
+  if(!isIOS || standalone || dismissed) return;
+  setTimeout(()=>{ if($("updateBanner").hidden) b.hidden = false; }, 1500);
+  $("installDismiss").onclick = ()=>{
+    b.hidden = true;
+    try{ localStorage.setItem(KEY+":install-hint","off"); }catch(e){}
+  };
+})();
 
 $("cDate").value = today();
 $("sDate").value = today();
