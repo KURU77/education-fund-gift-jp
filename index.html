@@ -129,6 +129,17 @@ button.mini{padding:3px 10px; font-size:11.5px; border-radius:6px; min-height:0}
 .echo{font-size:11.5px; color:var(--accent); margin-top:4px; min-height:1.2em; font-variant-numeric:tabular-nums}
 .echo:empty{min-height:0}
 .hint{font-size:11.5px; color:var(--muted); margin-top:6px}
+.formact{display:flex; gap:8px; align-items:flex-end}
+.formact .primary{flex:1}
+/* 編集中はカードと対象の行に印をつけて、いま何を直しているのかを見失わないようにする */
+.card.editing{border-color:var(--accent); box-shadow:0 0 0 2px var(--accent-soft), var(--shadow)}
+tbody tr.editing{background:var(--accent-soft)}
+tbody tr.editing:hover{background:var(--accent-soft)}
+.editnote{
+  background:var(--accent-soft); color:var(--accent);
+  border-radius:10px; padding:8px 12px; font-size:12px; margin-bottom:12px;
+}
+.editnote[hidden]{display:none}
 table{width:100%; border-collapse:collapse; font-variant-numeric:tabular-nums}
 th,td{padding:7px 8px; border-bottom:1px solid var(--line); text-align:left; font-size:13px}
 th{font-size:11.5px; color:var(--muted); font-weight:600; white-space:nowrap}
@@ -197,7 +208,7 @@ footer.note b{color:var(--text)}
   .card{padding:14px; border-radius:14px}
   /* 指で押せる大きさを確保する（Appleの目安は44pt四方） */
   button{min-height:46px; padding:10px 16px}
-  button.mini{min-height:38px; padding:6px 14px; font-size:12.5px}
+  button.mini{min-height:42px; padding:8px 16px; font-size:12.5px}
   .kpi .v{font-size:18px}
   .toolbar button{flex:1 1 46%}
   .toolbar .spacer{display:none}
@@ -267,8 +278,9 @@ footer.note b{color:var(--text)}
 </div>
 
 <!-- 2. 原資 -->
-<div class="card">
+<div class="card" id="cCard">
   <h2><span class="num">2</span>原資（非課税拠出額）の記録</h2>
+  <div class="editnote" id="cEditNote" hidden></div>
   <div class="grid g4">
     <div>
       <label class="f" for="cDate">拠出日</label>
@@ -283,11 +295,12 @@ footer.note b{color:var(--text)}
       <input type="number" id="cAmt" min="0" step="1000" inputmode="numeric" placeholder="10000000">
       <div class="echo" id="cAmtEcho"></div>
     </div>
-    <div style="display:flex; align-items:flex-end">
-      <button class="primary" id="addC" style="width:100%">原資を追加</button>
+    <div class="formact">
+      <button class="primary" id="addC">原資を追加</button>
+      <button type="button" id="cancelC" hidden>キャンセル</button>
     </div>
   </div>
-  <div class="hint">令和5年4月1日以後の拠出分は、満期残額への贈与税が「一般税率」で計算されます（それ以前の分は「特例税率」）。</div>
+  <div class="hint">令和5年4月1日以後の拠出分は、満期残額への贈与税が「一般税率」で計算されます（それ以前の分は「特例税率」）。登録済みの記録は一覧の「編集」から直せます。</div>
   <div id="cWarn"></div>
   <div class="subhead">拠出履歴</div>
   <table>
@@ -297,8 +310,9 @@ footer.note b{color:var(--text)}
 </div>
 
 <!-- 3. 支出 -->
-<div class="card">
+<div class="card" id="sCard">
   <h2><span class="num">3</span>教育資金の支出（払出し）記録</h2>
+  <div class="editnote" id="sEditNote" hidden></div>
   <div class="grid g4">
     <div>
       <label class="f" for="sDate">支払日</label>
@@ -321,7 +335,10 @@ footer.note b{color:var(--text)}
       <div class="echo" id="sAmtEcho"></div>
     </div>
   </div>
-  <div style="margin-top:12px"><button class="primary" id="addS">支出を追加</button></div>
+  <div class="formact" style="margin-top:12px">
+    <button class="primary" id="addS">支出を追加</button>
+    <button type="button" id="cancelS" hidden>キャンセル</button>
+  </div>
   <div id="sWarn" style="margin-top:12px"></div>
   <div class="subhead">支出履歴</div>
   <table>
@@ -464,6 +481,9 @@ const T_SPECIAL = [
 
 let state = load();
 
+/** 編集中のレコードID。保存はしないので、開き直せば通常の入力欄に戻る。 */
+let editingC = null, editingS = null;
+
 function load(){
   try{
     const raw = localStorage.getItem(KEY);
@@ -605,12 +625,16 @@ function renderContribs(){
     for(const c of list){
       const isGen = (c.date||"") >= GENERAL_RATE_FROM;
       const tr = document.createElement("tr");
+      if(c.id === editingC) tr.className = "editing";
       tr.innerHTML =
         '<td data-label="拠出日">'+fmtDate(c.date)+"</td>"+
         '<td data-label="贈与者">'+esc(c.from||"–")+"</td>"+
         '<td class="num" data-label="金額">'+yen(c.amount)+"</td>"+
         '<td data-label="税率区分">'+(isGen?"一般税率":"特例税率")+"</td>"+
-        '<td class="num act"><button class="mini" data-del-c="'+c.id+'">削除</button></td>';
+        '<td class="num act">'+
+          '<button class="mini" data-edit-c="'+c.id+'">編集</button> '+
+          '<button class="mini" data-del-c="'+c.id+'">削除</button>'+
+        "</td>";
       tb.appendChild(tr);
     }
     const total = list.reduce((a,c)=>a+c.amount,0);
@@ -632,12 +656,16 @@ function renderSpends(){
   }else{
     for(const s of list){
       const tr = document.createElement("tr");
+      if(s.id === editingS) tr.className = "editing";
       tr.innerHTML =
         '<td data-label="支払日">'+fmtDate(s.date)+"</td>"+
         '<td data-label="区分"><span class="tag '+(s.cat==="school"?"school":"other")+'">'+(s.cat==="school"?"学校等":"学校等以外")+"</span></td>"+
         '<td data-label="内容">'+esc(s.memo||"–")+"</td>"+
         '<td class="num" data-label="金額">'+yen(s.amount)+"</td>"+
-        '<td class="num act"><button class="mini" data-del-s="'+s.id+'">削除</button></td>';
+        '<td class="num act">'+
+          '<button class="mini" data-edit-s="'+s.id+'">編集</button> '+
+          '<button class="mini" data-del-s="'+s.id+'">削除</button>'+
+        "</td>";
       tb.appendChild(tr);
     }
   }
@@ -774,27 +802,123 @@ $("otherGiftType").addEventListener("change", ()=>{
   state.plan.otherGiftType = $("otherGiftType").value; save(); renderMaturity(compute(0,0));
 });
 
+// ---- 追加と編集 ----
+// 編集用の画面は別に作らず、上の入力欄をそのまま流用する。
+// 入る／出るを1つずつの関数にまとめてあるので、途中でやめても元の状態に戻せる。
+
+function startEditC(id){
+  const c = state.contributions.find(x=>x.id===id);
+  if(!c) return;
+  editingC = id;
+  $("cDate").value = c.date || today();
+  $("cFrom").value = c.from || "";
+  $("cAmt").value  = c.amount;
+  syncEcho("cAmt");
+  $("addC").textContent = "この原資を更新";
+  $("cancelC").hidden = false;
+  $("cCard").classList.add("editing");
+  const note = $("cEditNote");
+  note.textContent = fmtDate(c.date)+"　"+yen(c.amount)+" の記録を編集しています。";
+  note.hidden = false;
+  renderContribs();
+  $("cCard").scrollIntoView({behavior:"smooth", block:"start"});
+}
+
+function endEditC(){
+  editingC = null;
+  $("cDate").value = today();
+  $("cFrom").value = "";
+  $("cAmt").value  = "";
+  syncEcho("cAmt");
+  $("addC").textContent = "原資を追加";
+  $("cancelC").hidden = true;
+  $("cCard").classList.remove("editing");
+  $("cEditNote").hidden = true;
+  renderContribs();
+}
+
+function startEditS(id){
+  const s = state.spends.find(x=>x.id===id);
+  if(!s) return;
+  editingS = id;
+  $("sDate").value = s.date || today();
+  $("sCat").value  = s.cat;
+  $("sMemo").value = s.memo || "";
+  $("sAmt").value  = s.amount;
+  syncEcho("sAmt");
+  $("addS").textContent = "この支出を更新";
+  $("cancelS").hidden = false;
+  $("sCard").classList.add("editing");
+  const note = $("sEditNote");
+  note.textContent = fmtDate(s.date)+"　"+(s.memo||"（内容なし）")+"　"+yen(s.amount)+" の記録を編集しています。";
+  note.hidden = false;
+  renderSpends();
+  $("sCard").scrollIntoView({behavior:"smooth", block:"start"});
+}
+
+function endEditS(){
+  editingS = null;
+  $("sDate").value = today();
+  $("sCat").value  = "school";
+  $("sMemo").value = "";
+  $("sAmt").value  = "";
+  syncEcho("sAmt");
+  $("addS").textContent = "支出を追加";
+  $("cancelS").hidden = true;
+  $("sCard").classList.remove("editing");
+  $("sEditNote").hidden = true;
+  renderSpends();
+}
+
 $("addC").addEventListener("click", ()=>{
   const amt = num($("cAmt"));
   if(!amt){ alert("金額を入力してください。"); return; }
-  state.contributions.push({id:uid(), date:$("cDate").value||today(), from:$("cFrom").value.trim(), amount:amt});
-  $("cAmt").value=""; $("cFrom").value=""; syncEcho("cAmt");
+  const rec = {date:$("cDate").value||today(), from:$("cFrom").value.trim(), amount:amt};
+  if(editingC){
+    const c = state.contributions.find(x=>x.id===editingC);
+    if(c) Object.assign(c, rec);      // idは保ったまま中身だけ差し替える
+    endEditC();
+  }else{
+    state.contributions.push(Object.assign({id:uid()}, rec));
+    $("cAmt").value=""; $("cFrom").value=""; syncEcho("cAmt");
+  }
   save(); render();
 });
+$("cancelC").addEventListener("click", endEditC);
 
 $("addS").addEventListener("click", ()=>{
   const amt = num($("sAmt"));
   if(!amt){ alert("金額を入力してください。"); return; }
-  state.spends.push({id:uid(), date:$("sDate").value||today(), cat:$("sCat").value, memo:$("sMemo").value.trim(), amount:amt});
-  $("sAmt").value=""; $("sMemo").value=""; syncEcho("sAmt");
+  const rec = {date:$("sDate").value||today(), cat:$("sCat").value, memo:$("sMemo").value.trim(), amount:amt};
+  if(editingS){
+    const s = state.spends.find(x=>x.id===editingS);
+    if(s) Object.assign(s, rec);
+    endEditS();
+  }else{
+    state.spends.push(Object.assign({id:uid()}, rec));
+    $("sAmt").value=""; $("sMemo").value=""; syncEcho("sAmt");
+  }
   save(); render();
 });
+$("cancelS").addEventListener("click", endEditS);
 
 document.addEventListener("click", e=>{
-  const dc = e.target.getAttribute && e.target.getAttribute("data-del-c");
-  const ds = e.target.getAttribute && e.target.getAttribute("data-del-s");
-  if(dc){ if(confirm("この原資の記録を削除しますか？")){ state.contributions = state.contributions.filter(x=>x.id!==dc); save(); render(); } }
-  if(ds){ if(confirm("この支出の記録を削除しますか？")){ state.spends = state.spends.filter(x=>x.id!==ds); save(); render(); } }
+  const btn = e.target.closest && e.target.closest("button");
+  if(!btn) return;
+  const ec = btn.getAttribute("data-edit-c"), es = btn.getAttribute("data-edit-s");
+  const dc = btn.getAttribute("data-del-c"),  ds = btn.getAttribute("data-del-s");
+  if(ec) startEditC(ec);
+  if(es) startEditS(es);
+  if(dc && confirm("この原資の記録を削除しますか？")){
+    if(editingC === dc) endEditC();   // 編集中のものを消したら、入力欄も戻す
+    state.contributions = state.contributions.filter(x=>x.id!==dc);
+    save(); render();
+  }
+  if(ds && confirm("この支出の記録を削除しますか？")){
+    if(editingS === ds) endEditS();
+    state.spends = state.spends.filter(x=>x.id!==ds);
+    save(); render();
+  }
 });
 
 $("exportJson").addEventListener("click", ()=>{
@@ -826,6 +950,7 @@ $("importFile").addEventListener("change", e=>{
       state = {birth:o.birth||"", recipient:o.recipient||"", contractDate:o.contractDate||"",
                contributions:o.contributions, spends:Array.isArray(o.spends)?o.spends:[],
                plan:o.plan||{school:0,other:0,otherGift:0,otherGiftType:"special"}};
+      endEditC(); endEditS();   // 編集中のIDは読み込んだデータには無いので必ず抜ける
       save(); render(); alert("読み込みました。");
     }catch(err){ alert("読み込みに失敗しました："+err.message); }
   };
@@ -835,7 +960,7 @@ $("importFile").addEventListener("change", e=>{
 $("resetAll").addEventListener("click", ()=>{
   if(confirm("すべてのデータを削除します。よろしいですか？")){
     localStorage.removeItem(KEY);
-    state = load(); render();
+    state = load(); endEditC(); endEditS(); render();
   }
 });
 
