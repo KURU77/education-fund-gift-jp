@@ -1,0 +1,697 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>教育資金贈与マネージャー</title>
+<style>
+:root{
+  --bg:#f6f7f9; --panel:#ffffff; --panel2:#fbfcfd; --line:#e3e7ec;
+  --text:#1b2430; --muted:#6b7787; --accent:#1f6feb; --accent-soft:#e8f0fe;
+  --school:#2f7d5d; --school-soft:#e6f4ee;
+  --other:#b26a00; --other-soft:#fdf1de;
+  --danger:#c0392b; --danger-soft:#fdecea;
+  --radius:12px;
+}
+@media (prefers-color-scheme: dark){
+  :root{
+    --bg:#12151a; --panel:#1a1f26; --panel2:#20262e; --line:#2c343e;
+    --text:#e6ebf2; --muted:#96a1b0; --accent:#5b9bff; --accent-soft:#1d2b45;
+    --school:#5fc79b; --school-soft:#172e26;
+    --other:#e0a34a; --other-soft:#33260f;
+    --danger:#ff7b6b; --danger-soft:#3a1c19;
+  }
+}
+*{box-sizing:border-box}
+body{
+  margin:0; background:var(--bg); color:var(--text);
+  font-family:"Hiragino Kaku Gothic ProN","Yu Gothic UI","Meiryo",system-ui,sans-serif;
+  font-size:14px; line-height:1.6;
+}
+.wrap{max-width:1080px; margin:0 auto; padding:24px 16px 80px}
+header.top{margin-bottom:20px}
+header.top h1{font-size:20px; margin:0 0 4px}
+header.top p{margin:0; color:var(--muted); font-size:12.5px}
+.card{
+  background:var(--panel); border:1px solid var(--line); border-radius:var(--radius);
+  padding:18px; margin-bottom:16px;
+}
+.card > h2{
+  font-size:14px; margin:0 0 14px; letter-spacing:.02em;
+  display:flex; align-items:center; gap:8px;
+}
+.card > h2 .num{
+  display:inline-flex; align-items:center; justify-content:center;
+  width:20px; height:20px; border-radius:6px; background:var(--accent-soft);
+  color:var(--accent); font-size:11px; font-weight:700;
+}
+.grid{display:grid; gap:12px}
+.g2{grid-template-columns:repeat(2,minmax(0,1fr))}
+.g3{grid-template-columns:repeat(3,minmax(0,1fr))}
+.g4{grid-template-columns:repeat(4,minmax(0,1fr))}
+@media(max-width:760px){ .g2,.g3,.g4{grid-template-columns:1fr} }
+label.f{display:block; font-size:11.5px; color:var(--muted); margin-bottom:4px}
+input,select,button,textarea{font:inherit; color:inherit}
+input,select{
+  width:100%; padding:8px 10px; border:1px solid var(--line); border-radius:8px;
+  background:var(--panel2);
+}
+input:focus,select:focus{outline:2px solid var(--accent-soft); border-color:var(--accent)}
+input[type=number]{text-align:right; font-variant-numeric:tabular-nums}
+button{
+  border:1px solid var(--line); background:var(--panel2); border-radius:8px;
+  padding:8px 14px; cursor:pointer;
+}
+button:hover{border-color:var(--accent); color:var(--accent)}
+button.primary{background:var(--accent); border-color:var(--accent); color:#fff}
+button.primary:hover{opacity:.9; color:#fff}
+button.mini{padding:3px 8px; font-size:11.5px; border-radius:6px}
+.hint{font-size:11.5px; color:var(--muted); margin-top:6px}
+table{width:100%; border-collapse:collapse; font-variant-numeric:tabular-nums}
+th,td{padding:7px 8px; border-bottom:1px solid var(--line); text-align:left; font-size:13px}
+th{font-size:11.5px; color:var(--muted); font-weight:600; white-space:nowrap}
+td.num,th.num{text-align:right}
+tbody tr:hover{background:var(--panel2)}
+.empty{color:var(--muted); font-size:12.5px; padding:14px 0; text-align:center}
+.tag{display:inline-block; padding:1px 8px; border-radius:20px; font-size:11.5px; white-space:nowrap}
+.tag.school{background:var(--school-soft); color:var(--school)}
+.tag.other{background:var(--other-soft); color:var(--other)}
+.meterbox{margin-bottom:16px}
+.meterhead{display:flex; justify-content:space-between; align-items:baseline; margin-bottom:6px; gap:10px}
+.meterhead .name{font-size:13px; font-weight:600}
+.meterhead .val{font-size:12.5px; color:var(--muted); font-variant-numeric:tabular-nums}
+.meter{height:12px; background:var(--panel2); border:1px solid var(--line); border-radius:20px; overflow:hidden; display:flex}
+.meter span{display:block; height:100%}
+.meter .used-school{background:var(--school)}
+.meter .used-other{background:var(--other)}
+.meter .over{background:var(--danger)}
+.kpis{display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:10px}
+@media(max-width:760px){ .kpis{grid-template-columns:repeat(2,minmax(0,1fr))} }
+.kpi{background:var(--panel2); border:1px solid var(--line); border-radius:10px; padding:12px}
+.kpi .k{font-size:11.5px; color:var(--muted); margin-bottom:4px}
+.kpi .v{font-size:19px; font-weight:700; font-variant-numeric:tabular-nums; letter-spacing:-.01em}
+.kpi .v.pos{color:var(--school)}
+.kpi .v.neg{color:var(--danger)}
+.kpi .s{font-size:11px; color:var(--muted); margin-top:2px}
+.alert{
+  border-radius:10px; padding:10px 12px; font-size:12.5px; margin-bottom:10px;
+  background:var(--danger-soft); color:var(--danger); border:1px solid transparent;
+}
+.alert.info{background:var(--accent-soft); color:var(--accent)}
+.rows{display:flex; flex-direction:column; gap:2px}
+.row{display:flex; justify-content:space-between; gap:12px; padding:7px 0; border-bottom:1px dashed var(--line); font-size:13px}
+.row:last-child{border-bottom:none}
+.row .l{color:var(--muted)}
+.row .r{font-variant-numeric:tabular-nums; font-weight:600}
+.row.total{border-top:2px solid var(--line); border-bottom:none; margin-top:4px; padding-top:10px}
+.row.total .l{color:var(--text); font-weight:600}
+.row.total .r{font-size:16px}
+.split{display:grid; grid-template-columns:1fr 1fr; gap:20px}
+@media(max-width:760px){ .split{grid-template-columns:1fr} }
+.toolbar{display:flex; gap:8px; flex-wrap:wrap; align-items:center}
+.spacer{flex:1}
+footer.note{color:var(--muted); font-size:11.5px; line-height:1.8; margin-top:24px}
+footer.note b{color:var(--text)}
+.subhead{font-size:12px; color:var(--muted); font-weight:600; margin:16px 0 8px; letter-spacing:.03em}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<header class="top">
+  <h1>教育資金贈与マネージャー</h1>
+  <p>教育資金の一括贈与に係る贈与税非課税措置（非課税枠1,500万円／うち学校等以外は500万円）の管理・満期シミュレーション</p>
+  <div id="storageWarn" style="margin-top:12px"></div>
+</header>
+
+<!-- 1. 基本情報 -->
+<div class="card">
+  <h2><span class="num">1</span>基本情報</h2>
+  <div class="grid g3">
+    <div>
+      <label class="f" for="birth">受贈者の生年月日</label>
+      <input type="date" id="birth">
+    </div>
+    <div>
+      <label class="f" for="recipient">受贈者名（任意）</label>
+      <input type="text" id="recipient" placeholder="例：山田 太郎">
+    </div>
+    <div>
+      <label class="f" for="contractDate">契約日（任意）</label>
+      <input type="date" id="contractDate">
+    </div>
+  </div>
+  <div id="ageInfo" class="hint"></div>
+</div>
+
+<!-- 2. 原資 -->
+<div class="card">
+  <h2><span class="num">2</span>原資（非課税拠出額）の記録</h2>
+  <div class="grid g4">
+    <div>
+      <label class="f" for="cDate">拠出日</label>
+      <input type="date" id="cDate">
+    </div>
+    <div>
+      <label class="f" for="cFrom">贈与者</label>
+      <input type="text" id="cFrom" placeholder="例：祖父">
+    </div>
+    <div>
+      <label class="f" for="cAmt">金額（円）</label>
+      <input type="number" id="cAmt" min="0" step="1000" placeholder="10000000">
+    </div>
+    <div style="display:flex; align-items:flex-end">
+      <button class="primary" id="addC" style="width:100%">原資を追加</button>
+    </div>
+  </div>
+  <div class="hint">令和5年4月1日以後の拠出分は、満期残額への贈与税が「一般税率」で計算されます（それ以前の分は「特例税率」）。</div>
+  <div id="cWarn"></div>
+  <div class="subhead">拠出履歴</div>
+  <table>
+    <thead><tr><th>拠出日</th><th>贈与者</th><th class="num">金額</th><th>税率区分</th><th></th></tr></thead>
+    <tbody id="cBody"></tbody>
+  </table>
+</div>
+
+<!-- 3. 支出 -->
+<div class="card">
+  <h2><span class="num">3</span>教育資金の支出（払出し）記録</h2>
+  <div class="grid g4">
+    <div>
+      <label class="f" for="sDate">支払日</label>
+      <input type="date" id="sDate">
+    </div>
+    <div>
+      <label class="f" for="sCat">区分</label>
+      <select id="sCat">
+        <option value="school">学校等（入学金・授業料・給食費 等）</option>
+        <option value="other">学校等以外（塾・習い事・通学定期 等）</option>
+      </select>
+    </div>
+    <div>
+      <label class="f" for="sMemo">内容</label>
+      <input type="text" id="sMemo" placeholder="例：〇〇高校 授業料">
+    </div>
+    <div>
+      <label class="f" for="sAmt">金額（円）</label>
+      <input type="number" id="sAmt" min="0" step="100" placeholder="300000">
+    </div>
+  </div>
+  <div style="margin-top:12px"><button class="primary" id="addS">支出を追加</button></div>
+  <div id="sWarn" style="margin-top:12px"></div>
+  <div class="subhead">支出履歴</div>
+  <table>
+    <thead><tr><th>支払日</th><th>区分</th><th>内容</th><th class="num">金額</th><th></th></tr></thead>
+    <tbody id="sBody"></tbody>
+  </table>
+</div>
+
+<!-- 4. 残枠 -->
+<div class="card">
+  <h2><span class="num">4</span>非課税枠の消化状況</h2>
+  <div class="meterbox">
+    <div class="meterhead">
+      <span class="name">全体枠 1,500万円</span>
+      <span class="val" id="totalMeterVal"></span>
+    </div>
+    <div class="meter"><span class="used-school" id="mTotSchool"></span><span class="used-other" id="mTotOther"></span></div>
+  </div>
+  <div class="meterbox">
+    <div class="meterhead">
+      <span class="name">うち「学校等以外」枠 500万円（内枠）</span>
+      <span class="val" id="otherMeterVal"></span>
+    </div>
+    <div class="meter"><span class="used-other" id="mOthUsed"></span><span class="over" id="mOthOver"></span></div>
+  </div>
+
+  <div class="kpis" style="margin-top:18px">
+    <div class="kpi"><div class="k">「学校等」に使える残枠</div><div class="v" id="kSchoolLeft">–</div><div class="s">＝全体残枠</div></div>
+    <div class="kpi"><div class="k">「学校等以外」に使える残枠</div><div class="v" id="kOtherLeft">–</div><div class="s">500万円枠と全体枠の小さい方</div></div>
+    <div class="kpi"><div class="k">口座残高（原資−払出し）</div><div class="v" id="kBalance">–</div><div class="s">実際に口座に残る額</div></div>
+    <div class="kpi"><div class="k">管理残額（課税対象見込み）</div><div class="v" id="kManaged">–</div><div class="s">非課税拠出額−教育資金支出額</div></div>
+  </div>
+  <div id="capWarn" style="margin-top:14px"></div>
+</div>
+
+<!-- 5. 満期シミュレーション -->
+<div class="card">
+  <h2><span class="num">5</span>30歳満期シミュレーション</h2>
+
+  <div class="grid g4">
+    <div>
+      <label class="f" for="pSchool">満期までの追加支出見込み：学校等（円）</label>
+      <input type="number" id="pSchool" min="0" step="10000" value="0">
+    </div>
+    <div>
+      <label class="f" for="pOther">同：学校等以外（円）</label>
+      <input type="number" id="pOther" min="0" step="10000" value="0">
+    </div>
+    <div>
+      <label class="f" for="otherGift">満期年のその他の贈与額（円）</label>
+      <input type="number" id="otherGift" min="0" step="10000" value="0">
+    </div>
+    <div>
+      <label class="f" for="otherGiftType">その他の贈与の税率区分</label>
+      <select id="otherGiftType">
+        <option value="special">特例税率（直系尊属→18歳以上）</option>
+        <option value="general">一般税率</option>
+      </select>
+    </div>
+  </div>
+
+  <div class="split" style="margin-top:20px">
+    <div>
+      <div class="subhead">満期時点の残額</div>
+      <div class="rows" id="matLeft"></div>
+    </div>
+    <div>
+      <div class="subhead">贈与税の計算</div>
+      <div class="rows" id="matRight"></div>
+    </div>
+  </div>
+
+  <div class="kpis" style="margin-top:20px">
+    <div class="kpi"><div class="k">30歳到達日（契約終了日）</div><div class="v" id="kMatDate" style="font-size:16px">–</div><div class="s" id="kMatSub"></div></div>
+    <div class="kpi"><div class="k">満期時の口座残高</div><div class="v" id="kMatBal">–</div><div class="s">払戻される元の金額</div></div>
+    <div class="kpi"><div class="k">かかる贈与税</div><div class="v neg" id="kMatTax">–</div><div class="s" id="kMatRate"></div></div>
+    <div class="kpi"><div class="k">手元に残る金額</div><div class="v pos" id="kMatNet">–</div><div class="s">残高 − 贈与税</div></div>
+  </div>
+  <div id="matWarn" style="margin-top:14px"></div>
+</div>
+
+<div class="card">
+  <div class="toolbar">
+    <button id="exportJson">バックアップを保存（JSON）</button>
+    <button id="importBtn">バックアップを読込</button>
+    <button id="exportCsv">支出をCSV出力</button>
+    <input type="file" id="importFile" accept="application/json" style="display:none">
+    <div class="spacer"></div>
+    <button id="resetAll" style="color:var(--danger)">全データ削除</button>
+  </div>
+  <div class="hint">データはこのブラウザ内（localStorage）にのみ保存されます。外部へ送信されることはありません。</div>
+</div>
+
+<footer class="note">
+  <b>計算の前提</b><br>
+  ・非課税枠は受贈者1人につき合計1,500万円、うち「学校等以外」への支払いは500万円が上限（内枠）です。<br>
+  ・30歳到達時（在学中等の場合は最長40歳まで延長可）に残っている「管理残額」＝非課税拠出額−教育資金支出額 が、その年の贈与として贈与税の対象になります。<br>
+  ・令和5年4月1日以後に拠出された分に対応する管理残額には<b>一般税率</b>、それ以前の拠出分には<b>特例税率</b>が適用されます。本アプリは支出を古い拠出から順に充当（先入先出）して両者を按分し、国税庁の併用計算式で税額を算出します。実際の按分は金融機関の管理記録によります。<br>
+  ・「学校等以外」への支払いが500万円を超えた分は教育資金支出額に算入されないため、口座から出ていても管理残額として課税対象に残ります。<br>
+  ・令和元年7月1日以後、受贈者が23歳に達した後の「学校等以外」への支払いは、原則として教育訓練給付金の対象となる講座の受講料等に限られます。<br>
+  ・贈与税額は暦年課税・基礎控除110万円で計算しています。相続時精算課税を選択している場合や、贈与者の死亡時の相続税課税（管理残額の相続財産加算）は考慮していません。<br>
+  ・本アプリは概算用であり、正式な金額・申告要否は三井住友信託銀行および税理士・税務署にご確認ください。
+</footer>
+
+</div>
+
+<script>
+(function(){
+"use strict";
+
+const CAP_TOTAL = 15000000;
+const CAP_OTHER = 5000000;
+const BASIC_DEDUCTION = 1100000;
+const GENERAL_RATE_FROM = "2023-04-01"; // 令和5年4月1日以後の拠出は一般税率
+const KEY = "smtb-edu-gift-v1";
+
+// 贈与税速算表 [上限(基礎控除後), 税率, 控除額]
+const T_GENERAL = [
+  [2000000,0.10,0],[3000000,0.15,100000],[4000000,0.20,250000],[6000000,0.30,650000],
+  [10000000,0.40,1250000],[15000000,0.45,1750000],[30000000,0.50,2500000],[Infinity,0.55,4000000]
+];
+const T_SPECIAL = [
+  [2000000,0.10,0],[4000000,0.15,100000],[6000000,0.20,300000],[10000000,0.30,900000],
+  [15000000,0.40,1900000],[30000000,0.45,2650000],[45000000,0.50,4150000],[Infinity,0.55,6400000]
+];
+
+let state = load();
+
+function load(){
+  try{
+    const raw = localStorage.getItem(KEY);
+    if(raw){
+      const o = JSON.parse(raw);
+      return {
+        birth:o.birth||"", recipient:o.recipient||"", contractDate:o.contractDate||"",
+        contributions:Array.isArray(o.contributions)?o.contributions:[],
+        spends:Array.isArray(o.spends)?o.spends:[],
+        plan:o.plan||{school:0,other:0,otherGift:0,otherGiftType:"special"}
+      };
+    }
+  }catch(e){}
+  return {birth:"",recipient:"",contractDate:"",contributions:[],spends:[],
+          plan:{school:0,other:0,otherGift:0,otherGiftType:"special"}};
+}
+let storageWarned = false;
+function save(){
+  try{
+    localStorage.setItem(KEY, JSON.stringify(state));
+  }catch(e){
+    if(!storageWarned){
+      storageWarned = true;
+      const el = document.getElementById("storageWarn");
+      if(el) el.innerHTML = '<div class="alert">このブラウザでは保存領域が使えないため、入力内容はページを閉じると失われます（プライベートブラウズ等）。「バックアップを保存」でファイルに書き出してください。</div>';
+    }
+  }
+}
+
+const $ = id => document.getElementById(id);
+const yen = n => (n<0?"−":"") + "¥" + Math.abs(Math.round(n)).toLocaleString("ja-JP");
+const man = n => { const v = n/10000; return (Math.round(v*10)/10).toLocaleString("ja-JP") + "万円"; };
+const num = el => { const v = parseFloat(el.value); return isFinite(v)&&v>0 ? Math.round(v) : 0; };
+const fmtDate = s => { if(!s) return "–"; const d=new Date(s+"T00:00:00"); return d.getFullYear()+"年"+(d.getMonth()+1)+"月"+d.getDate()+"日"; };
+
+function taxFrom(table, base){
+  if(base<=0) return 0;
+  for(const [cap,rate,ded] of table){ if(base<=cap) return base*rate-ded; }
+  return 0;
+}
+
+// ---- 集計 ----
+function compute(extraSchool, extraOther){
+  extraSchool = extraSchool||0; extraOther = extraOther||0;
+
+  const principal = state.contributions.reduce((a,c)=>a+c.amount,0);
+  const nonTaxableContrib = Math.min(principal, CAP_TOTAL); // 非課税拠出額
+
+  const spSchool = state.spends.filter(s=>s.cat==="school").reduce((a,s)=>a+s.amount,0) + extraSchool;
+  const spOther  = state.spends.filter(s=>s.cat==="other").reduce((a,s)=>a+s.amount,0) + extraOther;
+  const spTotal  = spSchool + spOther;
+
+  // 教育資金支出額（学校等以外は500万円まで、かつ全体で非課税拠出額まで）
+  const otherQualified = Math.min(spOther, CAP_OTHER);
+  const qualified = Math.min(spSchool + otherQualified, nonTaxableContrib);
+
+  const totalLeft = Math.max(0, nonTaxableContrib - qualified);          // 学校等に使える残枠
+  const otherLeft = Math.max(0, Math.min(CAP_OTHER - spOther, totalLeft)); // 学校等以外の残枠
+  const balance   = principal - spTotal;                                  // 口座残高
+  const managed   = Math.max(0, nonTaxableContrib - qualified);           // 管理残額
+
+  // 先入先出で管理残額を「一般税率対象」「特例税率対象」に按分
+  const sorted = state.contributions.slice().sort((a,b)=> (a.date||"").localeCompare(b.date||""));
+  let toConsume = qualified, gen = 0, spe = 0, capLeft = CAP_TOTAL;
+  for(const c of sorted){
+    const eff = Math.min(c.amount, capLeft);
+    capLeft -= eff;
+    const used = Math.min(eff, toConsume);
+    toConsume -= used;
+    const rest = eff - used;
+    if(rest>0){ if((c.date||"") >= GENERAL_RATE_FROM) gen += rest; else spe += rest; }
+    if(capLeft<=0) break;
+  }
+
+  return {principal, nonTaxableContrib, spSchool, spOther, spTotal, otherQualified,
+          qualified, totalLeft, otherLeft, balance, managed,
+          managedGeneral:gen, managedSpecial:spe,
+          otherOver: Math.max(0, spOther - CAP_OTHER)};
+}
+
+function maturityDate(){
+  if(!state.birth) return null;
+  const b = new Date(state.birth+"T00:00:00");
+  if(isNaN(b)) return null;
+  return new Date(b.getFullYear()+30, b.getMonth(), b.getDate());
+}
+function birthPlus(years){
+  if(!state.birth) return null;
+  const b = new Date(state.birth+"T00:00:00");
+  if(isNaN(b)) return null;
+  return new Date(b.getFullYear()+years, b.getMonth(), b.getDate());
+}
+function ageNow(){
+  const b = state.birth ? new Date(state.birth+"T00:00:00") : null;
+  if(!b||isNaN(b)) return null;
+  const n = new Date();
+  let a = n.getFullYear()-b.getFullYear();
+  const m = n.getMonth()-b.getMonth();
+  if(m<0 || (m===0 && n.getDate()<b.getDate())) a--;
+  return a;
+}
+
+// ---- 描画 ----
+function render(){
+  $("birth").value = state.birth;
+  $("recipient").value = state.recipient;
+  $("contractDate").value = state.contractDate;
+  $("pSchool").value = state.plan.school;
+  $("pOther").value = state.plan.other;
+  $("otherGift").value = state.plan.otherGift;
+  $("otherGiftType").value = state.plan.otherGiftType;
+
+  renderAge();
+  renderContribs();
+  renderSpends();
+  const cur = compute(0,0);
+  renderQuota(cur);
+  renderMaturity(cur);
+}
+
+function renderAge(){
+  const a = ageNow(), m = maturityDate();
+  if(a===null){ $("ageInfo").textContent = "生年月日を入力すると、満期（30歳到達日）と残り期間を計算します。"; return; }
+  const days = m ? Math.ceil((m - new Date())/86400000) : 0;
+  const y23 = birthPlus(23);
+  let t = "現在 " + a + "歳　／　30歳到達日：" + m.getFullYear()+"年"+(m.getMonth()+1)+"月"+m.getDate()+"日";
+  t += days>0 ? "（あと約" + Math.floor(days/365) + "年" + Math.floor((days%365)/30) + "か月）" : "（到達済み）";
+  if(y23) t += "　／　23歳到達日：" + y23.getFullYear()+"年"+(y23.getMonth()+1)+"月"+y23.getDate()+"日";
+  $("ageInfo").textContent = t;
+}
+
+function renderContribs(){
+  const tb = $("cBody"); tb.innerHTML = "";
+  const list = state.contributions.slice().sort((a,b)=>(a.date||"").localeCompare(b.date||""));
+  if(!list.length){
+    tb.innerHTML = '<tr><td colspan="5" class="empty">原資の記録がありません</td></tr>';
+  }else{
+    for(const c of list){
+      const isGen = (c.date||"") >= GENERAL_RATE_FROM;
+      const tr = document.createElement("tr");
+      tr.innerHTML =
+        "<td>"+fmtDate(c.date)+"</td>"+
+        "<td>"+esc(c.from||"–")+"</td>"+
+        '<td class="num">'+yen(c.amount)+"</td>"+
+        "<td>"+(isGen?"一般税率":"特例税率")+"</td>"+
+        '<td class="num"><button class="mini" data-del-c="'+c.id+'">削除</button></td>';
+      tb.appendChild(tr);
+    }
+    const total = list.reduce((a,c)=>a+c.amount,0);
+    const tr = document.createElement("tr");
+    tr.innerHTML = '<td colspan="2" style="font-weight:600">合計</td><td class="num" style="font-weight:700">'+yen(total)+'</td><td colspan="2"></td>';
+    tb.appendChild(tr);
+  }
+  const p = state.contributions.reduce((a,c)=>a+c.amount,0);
+  $("cWarn").innerHTML = p>CAP_TOTAL
+    ? '<div class="alert" style="margin-top:10px">原資合計が非課税限度額1,500万円を超えています（超過 '+yen(p-CAP_TOTAL)+'）。超過分は非課税拠出額に算入されません。</div>' : "";
+}
+
+function renderSpends(){
+  const tb = $("sBody"); tb.innerHTML = "";
+  const list = state.spends.slice().sort((a,b)=>(b.date||"").localeCompare(a.date||""));
+  if(!list.length){
+    tb.innerHTML = '<tr><td colspan="5" class="empty">支出の記録がありません</td></tr>';
+  }else{
+    for(const s of list){
+      const tr = document.createElement("tr");
+      tr.innerHTML =
+        "<td>"+fmtDate(s.date)+"</td>"+
+        '<td><span class="tag '+(s.cat==="school"?"school":"other")+'">'+(s.cat==="school"?"学校等":"学校等以外")+"</span></td>"+
+        "<td>"+esc(s.memo||"–")+"</td>"+
+        '<td class="num">'+yen(s.amount)+"</td>"+
+        '<td class="num"><button class="mini" data-del-s="'+s.id+'">削除</button></td>';
+      tb.appendChild(tr);
+    }
+  }
+  // 23歳以降の「学校等以外」支出を警告
+  const y23 = birthPlus(23);
+  if(y23){
+    const iso = y23.toISOString().slice(0,10);
+    const late = state.spends.filter(s=>s.cat==="other" && s.date >= iso);
+    $("sWarn").innerHTML = late.length
+      ? '<div class="alert">23歳到達後の「学校等以外」の支出が '+late.length+'件（'+yen(late.reduce((a,s)=>a+s.amount,0))+'）あります。23歳以後は教育訓練給付金の対象講座の受講料等に限り非課税対象です。対象外の場合は記録から外してください。</div>'
+      : "";
+  } else { $("sWarn").innerHTML = ""; }
+}
+
+function renderQuota(c){
+  const schoolPct = Math.min(100, c.spSchool/CAP_TOTAL*100);
+  const otherPct  = Math.min(100-schoolPct, c.otherQualified/CAP_TOTAL*100);
+  $("mTotSchool").style.width = schoolPct+"%";
+  $("mTotOther").style.width  = otherPct+"%";
+  $("totalMeterVal").textContent = "使用 "+man(c.qualified)+" ／ 残 "+man(c.totalLeft);
+
+  const oUsed = Math.min(c.spOther, CAP_OTHER)/CAP_OTHER*100;
+  const oOver = c.otherOver>0 ? Math.min(100-oUsed, c.otherOver/CAP_OTHER*100) : 0;
+  $("mOthUsed").style.width = oUsed+"%";
+  $("mOthOver").style.width = oOver+"%";
+  $("otherMeterVal").textContent = "使用 "+man(c.spOther)+" ／ 残 "+man(c.otherLeft);
+
+  $("kSchoolLeft").textContent = yen(c.totalLeft);
+  $("kOtherLeft").textContent  = yen(c.otherLeft);
+  $("kBalance").textContent    = yen(c.balance);
+  $("kManaged").textContent    = yen(c.managed);
+  $("kManaged").className = "v" + (c.managed>0 ? " neg" : " pos");
+
+  let w = "";
+  if(c.otherOver>0){
+    w += '<div class="alert">「学校等以外」への支払いが500万円枠を '+yen(c.otherOver)+' 超過しています。この超過分は教育資金支出額に算入されないため、口座から出ていても満期時の課税対象（管理残額）に残ります。</div>';
+  }
+  if(c.balance<0){
+    w += '<div class="alert">払出し合計が原資合計を上回っています。記録を確認してください。</div>';
+  }
+  if(!w && c.managed>0 && c.principal>0){
+    w = '<div class="alert info">このまま使い切らないと、満期時に '+yen(c.managed)+' が贈与税の課税対象になります。</div>';
+  }
+  $("capWarn").innerHTML = w;
+}
+
+function renderMaturity(cur){
+  const mat = compute(state.plan.school, state.plan.other);
+  const otherGift = state.plan.otherGift;
+  const otherIsGeneral = state.plan.otherGiftType === "general";
+
+  // 課税価格
+  const giftTotal = mat.managed + otherGift;
+  const base = Math.max(0, giftTotal - BASIC_DEDUCTION);
+  const genPart = mat.managedGeneral + (otherIsGeneral ? otherGift : 0);
+  const spePart = mat.managedSpecial + (otherIsGeneral ? 0 : otherGift);
+
+  let tax = 0;
+  if(base>0 && giftTotal>0){
+    const tg = taxFrom(T_GENERAL, base);
+    const ts = taxFrom(T_SPECIAL, base);
+    tax = tg * (genPart/giftTotal) + ts * (spePart/giftTotal);
+    tax = Math.floor(tax/100)*100; // 100円未満切捨て
+  }
+  const matBalance = mat.balance;
+  const net = matBalance - tax;
+
+  const L = [
+    ["原資（非課税拠出額）合計", yen(mat.nonTaxableContrib)],
+    ["教育資金支出額（認定分）", "− "+yen(mat.qualified)],
+    ["　うち学校等", yen(Math.min(mat.spSchool, mat.qualified))],
+    ["　うち学校等以外（500万円まで）", yen(mat.otherQualified)],
+    ["管理残額（課税対象）", yen(mat.managed), true],
+  ];
+  $("matLeft").innerHTML = L.map(r =>
+    '<div class="row'+(r[2]?" total":"")+'"><span class="l">'+r[0]+'</span><span class="r">'+r[1]+'</span></div>').join("");
+
+  const R = [
+    ["管理残額（一般税率対象）", yen(mat.managedGeneral)],
+    ["管理残額（特例税率対象）", yen(mat.managedSpecial)],
+    ["満期年のその他の贈与", yen(otherGift)],
+    ["基礎控除", "− "+yen(BASIC_DEDUCTION)],
+    ["課税価格", yen(base)],
+    ["贈与税額", yen(tax), true],
+  ];
+  $("matRight").innerHTML = R.map(r =>
+    '<div class="row'+(r[2]?" total":"")+'"><span class="l">'+r[0]+'</span><span class="r">'+r[1]+'</span></div>').join("");
+
+  const m = maturityDate();
+  $("kMatDate").textContent = m ? (m.getFullYear()+"/"+String(m.getMonth()+1).padStart(2,"0")+"/"+String(m.getDate()).padStart(2,"0")) : "–";
+  $("kMatSub").textContent = state.recipient ? state.recipient+" さんが30歳" : "受贈者が30歳に達する日";
+  $("kMatBal").textContent = yen(matBalance);
+  $("kMatTax").textContent = yen(tax);
+  $("kMatNet").textContent = yen(net);
+  const effRate = matBalance>0 ? (tax/matBalance*100) : 0;
+  $("kMatRate").textContent = tax>0 ? ("残高に対する実効税率 "+ (Math.round(effRate*10)/10) +"%") : "課税なし";
+
+  let w = "";
+  if(!state.birth) w += '<div class="alert info">生年月日を入力すると満期日が表示されます。</div>';
+  if(mat.managed>0 && mat.otherOver>0){
+    w += '<div class="alert">管理残額 '+yen(mat.managed)+' のうち '+yen(Math.min(mat.otherOver, mat.managed))+' は「学校等以外500万円超過」により発生しています（お金は既に使っていても課税されます）。</div>';
+  }
+  if(mat.managed===0 && state.contributions.length){
+    w += '<div class="alert info">この見込みどおりであれば管理残額は0円となり、満期時の贈与税はかかりません。</div>';
+  }
+  w += '<div class="alert info">30歳到達時に学校等に在学中、または教育訓練を受けている場合は、届出により最長40歳まで契約を継続できます（その間に使い切れば課税されません）。</div>';
+  $("matWarn").innerHTML = w;
+}
+
+function esc(s){ return String(s).replace(/[&<>"]/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c])); }
+function uid(){ return Date.now().toString(36)+Math.random().toString(36).slice(2,7); }
+function today(){ return new Date().toISOString().slice(0,10); }
+
+// ---- イベント ----
+["birth","recipient","contractDate"].forEach(id=>{
+  $(id).addEventListener("change", ()=>{ state[id]=$(id).value; save(); render(); });
+});
+["pSchool","pOther","otherGift"].forEach(id=>{
+  const key = {pSchool:"school", pOther:"other", otherGift:"otherGift"}[id];
+  $(id).addEventListener("input", ()=>{ state.plan[key]=num($(id)); save(); renderMaturity(compute(0,0)); });
+});
+$("otherGiftType").addEventListener("change", ()=>{
+  state.plan.otherGiftType = $("otherGiftType").value; save(); renderMaturity(compute(0,0));
+});
+
+$("addC").addEventListener("click", ()=>{
+  const amt = num($("cAmt"));
+  if(!amt){ alert("金額を入力してください。"); return; }
+  state.contributions.push({id:uid(), date:$("cDate").value||today(), from:$("cFrom").value.trim(), amount:amt});
+  $("cAmt").value=""; $("cFrom").value="";
+  save(); render();
+});
+
+$("addS").addEventListener("click", ()=>{
+  const amt = num($("sAmt"));
+  if(!amt){ alert("金額を入力してください。"); return; }
+  state.spends.push({id:uid(), date:$("sDate").value||today(), cat:$("sCat").value, memo:$("sMemo").value.trim(), amount:amt});
+  $("sAmt").value=""; $("sMemo").value="";
+  save(); render();
+});
+
+document.addEventListener("click", e=>{
+  const dc = e.target.getAttribute && e.target.getAttribute("data-del-c");
+  const ds = e.target.getAttribute && e.target.getAttribute("data-del-s");
+  if(dc){ if(confirm("この原資の記録を削除しますか？")){ state.contributions = state.contributions.filter(x=>x.id!==dc); save(); render(); } }
+  if(ds){ if(confirm("この支出の記録を削除しますか？")){ state.spends = state.spends.filter(x=>x.id!==ds); save(); render(); } }
+});
+
+$("exportJson").addEventListener("click", ()=>{
+  const blob = new Blob([JSON.stringify(state,null,2)], {type:"application/json"});
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(blob);
+  a.download = "教育資金贈与_backup_"+today()+".json";
+  a.click(); URL.revokeObjectURL(a.href);
+});
+$("exportCsv").addEventListener("click", ()=>{
+  const rows = [["支払日","区分","内容","金額"]].concat(
+    state.spends.slice().sort((a,b)=>(a.date||"").localeCompare(b.date||""))
+      .map(s=>[s.date, s.cat==="school"?"学校等":"学校等以外", s.memo||"", s.amount]));
+  const csv = "﻿" + rows.map(r=>r.map(v=>'"'+String(v).replace(/"/g,'""')+'"').join(",")).join("\r\n");
+  const blob = new Blob([csv], {type:"text/csv"});
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(blob);
+  a.download = "教育資金支出_"+today()+".csv";
+  a.click(); URL.revokeObjectURL(a.href);
+});
+$("importBtn").addEventListener("click", ()=> $("importFile").click());
+$("importFile").addEventListener("change", e=>{
+  const f = e.target.files[0]; if(!f) return;
+  const r = new FileReader();
+  r.onload = () => {
+    try{
+      const o = JSON.parse(r.result);
+      if(!o || !Array.isArray(o.contributions)) throw new Error("形式が不正です");
+      state = {birth:o.birth||"", recipient:o.recipient||"", contractDate:o.contractDate||"",
+               contributions:o.contributions, spends:Array.isArray(o.spends)?o.spends:[],
+               plan:o.plan||{school:0,other:0,otherGift:0,otherGiftType:"special"}};
+      save(); render(); alert("読み込みました。");
+    }catch(err){ alert("読み込みに失敗しました："+err.message); }
+  };
+  r.readAsText(f);
+  e.target.value = "";
+});
+$("resetAll").addEventListener("click", ()=>{
+  if(confirm("すべてのデータを削除します。よろしいですか？")){
+    localStorage.removeItem(KEY);
+    state = load(); render();
+  }
+});
+
+$("cDate").value = today();
+$("sDate").value = today();
+render();
+})();
+</script>
+</body>
+</html>
