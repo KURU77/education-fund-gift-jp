@@ -1,13 +1,12 @@
 <!doctype html>
-<html lang="ja">
+<html lang="ja" data-theme="light">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>教育資金贈与マネージャー — 非課税枠と30歳満期の贈与税を自動計算</title>
 <meta name="description" content="教育資金の一括贈与（非課税措置）の原資と使い道を「学校等」「学校等以外」に分けて記録し、残りの非課税枠と、30歳の満期時にかかる贈与税・手元に残る金額を計算します。">
 <meta name="color-scheme" content="light dark">
-<meta name="theme-color" content="#f1f6f2" media="(prefers-color-scheme: light)">
-<meta name="theme-color" content="#222932" media="(prefers-color-scheme: dark)">
+<meta name="theme-color" id="themeColor" content="#fbfcfd">
 <meta property="og:title" content="教育資金贈与マネージャー">
 <meta property="og:description" content="非課税枠1,500万円／うち学校等以外500万円の残りと、30歳満期の贈与税・手元に残る金額を自動計算。">
 <meta property="og:type" content="website">
@@ -21,34 +20,35 @@
 <link rel="apple-touch-icon" href="assets/apple-touch-icon.png">
 <link rel="manifest" href="manifest.webmanifest">
 <style>
-/* 配色は「背景は明るく淡く、文字と色は読める濃さを残す」方針。
- * 真っ白 × 真っ黒はまぶしいので、背景はごく淡い若草色、文字は黒ではなく
- * やわらかい墨色にしている。文字と背景の組み合わせはすべて
- * WCAG AA（4.5:1）以上あることを確認済み。 */
+/* 白基調。ページ背景はほぼ白、カードは純白、入力欄だけ少し落とす。
+ * ただし文字は真っ黒にしない。純白 × 真っ黒は明暗差が16:1を超えて
+ * まぶしいので、やわらかい墨色にして11:1程度に抑えている。
+ * 文字と背景の組み合わせはすべて WCAG AA（4.5:1）以上あることを確認済み。 */
 :root{
-  --bg:#f1f6f2; --panel:#fbfdfb; --panel2:#ecf3ee; --line:#d2e0d7;
-  --text:#36474e; --muted:#5c6d73;
-  --accent:#17669f; --accent-soft:#e3eef8; --on-accent:#ffffff;
-  --school:#1f7355; --school-soft:#dff1e7;
-  --other:#8a5d11; --other-soft:#f9eed9;
-  --danger:#b0433a; --danger-soft:#fbe7e5;
-  --shadow:0 1px 2px rgba(54,71,78,.05), 0 6px 18px rgba(54,71,78,.045);
+  --bg:#fbfcfd; --panel:#ffffff; --panel2:#f2f5f8; --line:#dde4ec;
+  --text:#333d47; --muted:#5c6875;
+  --accent:#1366a6; --accent-soft:#e7f0f8; --on-accent:#ffffff;
+  --school:#1b6f52; --school-soft:#e2f2ea;
+  --other:#855912; --other-soft:#f9efdb;
+  --danger:#b03f37; --danger-soft:#fbe9e7;
+  --shadow:0 1px 2px rgba(51,61,71,.05), 0 6px 18px rgba(51,61,71,.05);
   /* url() の中身は var() で差し替えられないので、url ごと変数に持たせる */
-  --select-arrow:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 8'%3E%3Cpath d='M1 1.5 6 6.5 11 1.5' fill='none' stroke='%235c6d73' stroke-width='1.6' stroke-linecap='round'/%3E%3C/svg%3E");
+  --select-arrow:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 8'%3E%3Cpath d='M1 1.5 6 6.5 11 1.5' fill='none' stroke='%235c6875' stroke-width='1.6' stroke-linecap='round'/%3E%3C/svg%3E");
   --radius:14px;
 }
-@media (prefers-color-scheme: dark){
-  :root{
-    /* 暗い側も沈めすぎない。真っ黒だと明暗差が強すぎて、かえって疲れる */
-    --bg:#222932; --panel:#2b333d; --panel2:#333c47; --line:#43505d;
-    --text:#dee5ed; --muted:#9dabb8;
-    --accent:#7cb2ea; --accent-soft:#26364a; --on-accent:#16202b;
-    --school:#70d0a7; --school-soft:#22392f;
-    --other:#e6b96c; --other-soft:#3a2f18;
-    --danger:#f0918a; --danger-soft:#3d2422;
-    --shadow:0 1px 2px rgba(0,0,0,.18), 0 6px 18px rgba(0,0,0,.16);
-    --select-arrow:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 8'%3E%3Cpath d='M1 1.5 6 6.5 11 1.5' fill='none' stroke='%239dabb8' stroke-width='1.6' stroke-linecap='round'/%3E%3C/svg%3E");
-  }
+/* 暗い配色はメニューで「ダーク」を選んだときだけ。既定はライト固定で、
+ * 端末のダークモードには自動追従しない（「自動」を選べば追従する）。
+ * 実際にどちらを当てるかは JS が data-theme に書き込む。 */
+:root[data-theme="dark"]{
+  /* 暗い側も沈めすぎない。真っ黒だと明暗差が強すぎて、かえって疲れる */
+  --bg:#222932; --panel:#2b333d; --panel2:#333c47; --line:#43505d;
+  --text:#dee5ed; --muted:#9dabb8;
+  --accent:#7cb2ea; --accent-soft:#26364a; --on-accent:#16202b;
+  --school:#70d0a7; --school-soft:#22392f;
+  --other:#e6b96c; --other-soft:#3a2f18;
+  --danger:#f0918a; --danger-soft:#3d2422;
+  --shadow:0 1px 2px rgba(0,0,0,.18), 0 6px 18px rgba(0,0,0,.16);
+  --select-arrow:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 8'%3E%3Cpath d='M1 1.5 6 6.5 11 1.5' fill='none' stroke='%239dabb8' stroke-width='1.6' stroke-linecap='round'/%3E%3C/svg%3E");
 }
 *{box-sizing:border-box}
 html{
@@ -97,7 +97,7 @@ body{
 
 /* ── 引き出しメニュー ───────────────────────────── */
 .scrim{
-  position:fixed; inset:0; z-index:40; background:rgba(20,30,28,.45);
+  position:fixed; inset:0; z-index:40; background:rgba(28,36,45,.42);
   opacity:0; visibility:hidden;
   /* visibility は補間させず、閉じるときだけ遅らせる。
      さらに pointer-events はトランジションを挟まずクラスで即座に切り替える。
@@ -110,7 +110,7 @@ body{
 .drawer{
   position:fixed; top:0; bottom:0; left:0; z-index:41; width:min(292px,82vw);
   background:var(--panel); border-right:1px solid var(--line);
-  box-shadow:0 0 40px rgba(20,30,28,.18);
+  box-shadow:0 0 40px rgba(51,61,71,.16);
   transform:translateX(-100%); visibility:hidden; pointer-events:none;
   transition:transform .22s ease, visibility 0s linear .22s;
   overflow-y:auto; -webkit-overflow-scrolling:touch;
@@ -127,6 +127,11 @@ body{
 .drawer .dt{display:block; font-size:13.5px; font-weight:600}
 .drawer .ds{display:block; font-size:11.5px; color:var(--muted)}
 .drawer a.current .dt{color:var(--accent)}
+.themeswitch{display:flex; gap:6px; margin:0 12px}
+.themeswitch button{flex:1 1 0; min-width:0; min-height:42px; padding:8px 6px; font-size:12.5px; border-radius:9px}
+.themeswitch button.on{background:var(--accent); border-color:var(--accent); color:var(--on-accent)}
+.themeswitch button.on:hover{color:var(--on-accent)}
+.themehint{font-size:11px; color:var(--muted); padding:8px 12px 0; line-height:1.6}
 @media (prefers-reduced-motion: reduce){ .drawer,.scrim{transition:none} }
 
 /* ── ページの出し分け ───────────────────────────── */
@@ -281,7 +286,7 @@ footer.note b{color:var(--text)}
   bottom:calc(12px + env(safe-area-inset-bottom));
   background:var(--panel); border:1px solid var(--line); border-radius:12px;
   padding:12px 14px; font-size:12.5px;
-  box-shadow:0 10px 30px rgba(54,71,78,.16);
+  box-shadow:0 10px 30px rgba(51,61,71,.16);
   display:flex; align-items:center; gap:10px;
 }
 .banner[hidden]{display:none}
@@ -335,6 +340,20 @@ footer.note b{color:var(--text)}
   tbody tr.totalrow td{display:block; padding:0}
 }
 </style>
+<script>
+/* 保存された配色を、最初の描画より前に当てる（一瞬ライトで出てから暗転するのを防ぐ）。
+   本体のスクリプトと同じ判定をしているが、ここは head で先に走る必要がある。 */
+(function(){
+  try{
+    var pref = localStorage.getItem("smtb-edu-gift-v1:theme") || "light";
+    var dark = pref === "dark" ||
+      (pref === "auto" && window.matchMedia && matchMedia("(prefers-color-scheme: dark)").matches);
+    document.documentElement.setAttribute("data-theme", dark ? "dark" : "light");
+    var m = document.getElementById("themeColor");
+    if(m) m.setAttribute("content", dark ? "#222932" : "#fbfcfd");
+  }catch(e){}
+})();
+</script>
 </head>
 <body>
 
@@ -352,6 +371,13 @@ footer.note b{color:var(--text)}
 <nav class="drawer" id="drawer" aria-label="ページ切り替え" aria-hidden="true">
   <div class="drawer-head">ページ</div>
   <div id="drawerLinks"></div>
+  <div class="drawer-head" style="padding-top:16px">配色</div>
+  <div class="themeswitch" id="themeSwitch">
+    <button type="button" data-theme-pref="light">ライト</button>
+    <button type="button" data-theme-pref="dark">ダーク</button>
+    <button type="button" data-theme-pref="auto">自動</button>
+  </div>
+  <div class="themehint">「自動」は端末の設定（ダークモード）に合わせます。</div>
 </nav>
 
 <div class="wrap">
@@ -1061,6 +1087,29 @@ function route(){
   window.scrollTo(0, 0);
 }
 
+// ---- 配色（ライト／ダーク／自動） ----
+// 既定はライト固定。端末がダークモードでも、明示的に「自動」を選ばない限り
+// 白基調のまま表示する。
+const THEME_KEY = KEY + ":theme";
+
+function themePref(){
+  try{ return localStorage.getItem(THEME_KEY) || "light"; }catch(e){ return "light"; }
+}
+
+function applyTheme(){
+  const pref = themePref();
+  const mq = window.matchMedia && matchMedia("(prefers-color-scheme: dark)");
+  const dark = pref === "dark" || (pref === "auto" && mq && mq.matches);
+  document.documentElement.setAttribute("data-theme", dark ? "dark" : "light");
+  const meta = $("themeColor");
+  if(meta) meta.setAttribute("content", dark ? "#222932" : "#fbfcfd");
+  document.querySelectorAll("#themeSwitch button").forEach(b=>{
+    const on = b.getAttribute("data-theme-pref") === pref;
+    b.classList.toggle("on", on);
+    b.setAttribute("aria-pressed", on ? "true" : "false");
+  });
+}
+
 function openDrawer(){
   $("drawer").classList.add("open");
   $("scrim").classList.add("show");
@@ -1323,6 +1372,21 @@ $("drawerLinks").addEventListener("click", e=>{ if(e.target.closest("a")) closeD
 addEventListener("keydown", e=>{ if(e.key === "Escape") closeDrawer(); });
 addEventListener("hashchange", route);
 
+// 配色は切り替えても引き出しを開いたままにする（見比べられるように）
+$("themeSwitch").addEventListener("click", e=>{
+  const b = e.target.closest("button[data-theme-pref]");
+  if(!b) return;
+  try{ localStorage.setItem(THEME_KEY, b.getAttribute("data-theme-pref")); }catch(err){}
+  applyTheme();
+});
+{
+  const mq = window.matchMedia && matchMedia("(prefers-color-scheme: dark)");
+  if(mq && mq.addEventListener){
+    mq.addEventListener("change", ()=>{ if(themePref() === "auto") applyTheme(); });
+  }
+}
+
+applyTheme();
 buildNav();
 $("cDate").value = today();
 $("sDate").value = today();
