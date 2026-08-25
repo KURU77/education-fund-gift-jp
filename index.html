@@ -158,6 +158,23 @@ body{
 .navcard .ns{display:block; font-size:11.5px; color:var(--muted)}
 .navcard .chev{margin-left:auto; color:var(--muted); flex:0 0 auto}
 
+/* ── 外部サイトへのリンク一覧 ─────────────────────── */
+.linklist{display:grid; gap:10px}
+.linkcard{
+  display:flex; align-items:center; gap:10px; min-height:66px; padding:14px;
+  background:var(--panel2); border:1px solid var(--line); border-radius:12px;
+  color:inherit; text-decoration:none;
+}
+.linkcard:hover{border-color:var(--accent)}
+.linkcard .lt{display:block; font-size:13.5px; font-weight:700}
+.linkcard .lh{display:block; font-size:11.5px; color:var(--muted)}
+.linkcard .ext{margin-left:auto; color:var(--muted); flex:0 0 auto}
+/* いちばん使うものは目立たせる */
+.linkcard.main{background:var(--accent-soft); border-color:transparent}
+.linkcard.main .lt{color:var(--accent)}
+.linkcard.main .lh{color:var(--accent)}
+.linkcard.main .ext{color:var(--accent)}
+
 /* ── 「まとめに戻る」。各ページの先頭と末尾の両方に置く ───────── */
 .backhome{display:flex; justify-content:center; margin:6px 0 10px}
 /* 先頭のものは戻る導線として自然な左寄せにする */
@@ -222,6 +239,12 @@ button.mini{padding:3px 10px; font-size:11.5px; border-radius:6px; min-height:0}
 .echo{font-size:11.5px; color:var(--accent); margin-top:4px; min-height:1.2em; font-variant-numeric:tabular-nums}
 .echo:empty{min-height:0}
 .hint{font-size:11.5px; color:var(--muted); margin-top:6px}
+/* 文中のリンクはブラウザ既定の青のままだと配色から浮き、暗い配色では読めなくなる。
+   親の色を継いで下線で示す（親の色は背景に対して十分な差があることを確認済み）。 */
+.alert a, .hint a, .row a, .rows a, footer.note a, .card > p a{
+  color:inherit; text-decoration:underline; text-underline-offset:2px;
+}
+.alert a:hover, .hint a:hover, .row a:hover, .rows a:hover, footer.note a:hover{opacity:.75}
 .formact{display:flex; gap:8px; align-items:flex-end}
 .formact .primary{flex:1}
 /* 編集中はカードと対象の行に印をつけて、いま何を直しているのかを見失わないようにする */
@@ -525,6 +548,55 @@ footer.note b{color:var(--text)}
 <div class="backhome"><a href="#/">まとめページに戻る</a></div>
 </section>
 
+<!-- 3.5 23歳以降に使える講座 -->
+<section class="page" id="page-training" hidden>
+<div class="backhome top"><a href="#/">まとめページに戻る</a></div>
+
+<div class="card">
+  <h2><span class="num">!</span>23歳以降の「学校等以外」の扱い</h2>
+  <p style="margin:0 0 12px">
+    令和元年7月1日以後、<b>23歳に達した日の翌日以後</b>に支払う「学校等以外」への費用は、
+    原則として非課税の対象から外れます。ただし
+    <b>教育訓練給付金の支給対象となる教育訓練の受講費用</b>は、23歳以降も引き続き対象です。
+  </p>
+  <div class="rows">
+    <div class="row"><span class="l">23歳になるまで</span><span class="r">塾・習い事・スポーツ教室なども対象（500万円枠内）</span></div>
+    <div class="row"><span class="l">23歳以降</span><span class="r">教育訓練給付金の対象講座の受講料など</span></div>
+    <div class="row"><span class="l">「学校等」への支払い</span><span class="r">年齢にかかわらず対象のまま</span></div>
+  </div>
+  <div class="hint">
+    年齢は民法の数え方で、「23歳に達した日」は誕生日の前日です。その翌日以後、
+    つまり<b>23歳の誕生日から</b>この扱いになります。
+  </div>
+</div>
+
+<div class="card">
+  <h2><span class="num">✓</span>あなたの状況</h2>
+  <div id="age23Status"></div>
+  <div id="post23List" style="margin-top:12px"></div>
+</div>
+
+<div class="card">
+  <h2><span class="num">→</span>対象講座をさがす（厚生労働省）</h2>
+  <div class="linklist" id="trainingLinks"></div>
+  <div class="hint">
+    リンク先は外部サイトです。ブラウザの別タブで開きます（オフラインのときは開けません）。
+  </div>
+</div>
+
+<div class="card">
+  <h2><span class="num">※</span>使うときの注意</h2>
+  <div class="rows">
+    <div class="row"><span class="l">指定には期限がある</span><span class="r">指定期間は3年。<b>受講開始日の時点で</b>指定されているかを確認してください</span></div>
+    <div class="row"><span class="l">検索結果は最新とは限らない</span><span class="r">最終的な可否はハローワークに確認を</span></div>
+    <div class="row"><span class="l">給付金の受給とは別</span><span class="r">非課税の判定は「支給対象となる教育訓練か」であり、実際に給付金を受け取るかどうかとは別です</span></div>
+    <div class="row"><span class="l">領収書の宛名・日付</span><span class="r">金融機関への提出要件は契約先（三井住友信託銀行）にご確認ください</span></div>
+  </div>
+</div>
+
+<div class="backhome"><a href="#/">まとめページに戻る</a></div>
+</section>
+
 <!-- 4. 残枠 -->
 <section class="page" id="page-quota" hidden>
 <div class="backhome top"><a href="#/">まとめページに戻る</a></div>
@@ -797,6 +869,7 @@ function render(){
   const cur = compute(0,0);
   renderQuota(cur);
   renderMaturity(cur);
+  renderTraining();
   renderHome(cur);
 }
 
@@ -867,10 +940,11 @@ function renderSpends(){
   // 23歳以降の「学校等以外」支出を警告
   const y23 = birthPlus(23);
   if(y23){
-    const iso = y23.toISOString().slice(0,10);
+    // 「23歳に達した日の翌日以後」＝民法では誕生日の前日に達するので、23歳の誕生日当日から
+    const iso = isoOf(y23);
     const late = state.spends.filter(s=>s.cat==="other" && s.date >= iso);
     $("sWarn").innerHTML = late.length
-      ? '<div class="alert">23歳到達後の「学校等以外」の支出が '+late.length+'件（'+yen(late.reduce((a,s)=>a+s.amount,0))+'）あります。23歳以後は教育訓練給付金の対象講座の受講料等に限り非課税対象です。対象外の場合は記録から外してください。</div>'
+      ? '<div class="alert">23歳の誕生日以後の「学校等以外」の支出が '+late.length+'件（'+yen(late.reduce((a,s)=>a+s.amount,0))+'）あります。この時期以後は教育訓練給付金の対象講座の受講料等に限り非課税対象です。<a href="#/training">対象講座をさがす</a></div>'
       : "";
   } else { $("sWarn").innerHTML = ""; }
 }
@@ -987,6 +1061,83 @@ function renderMaturity(cur){
   $("matWarn").innerHTML = w;
 }
 
+// ---- 23歳以降に使える講座 ----
+// リンク先はすべて 2026年8月時点で到達を確認した公式ページ。
+// PWA を全画面で使っているときに外部サイトへ飛ぶと戻れなくなるので、
+// 別タブで開く（iOS のホーム画面起動では Safari 側で開く）。
+
+const TRAINING_LINKS = [
+  {main:true,
+   title:"教育訓練給付金 検索システム（講座・スクールを探す）",
+   note:"厚生労働省｜学校名・講座名・分野からキーワード検索",
+   url:"https://www.kyufu.mhlw.go.jp/kensaku/SSR101Scr01S"},
+  {title:"同 トップページ",
+   note:"厚生労働省｜制度と講座の説明つき",
+   url:"https://www.kyufu.mhlw.go.jp/kensaku/"},
+  {title:"教育訓練給付金とは",
+   note:"ハローワークインターネットサービス｜対象者・手続き",
+   url:"https://www.hellowork.mhlw.go.jp/insurance/insurance_education.html"},
+  {title:"教育訓練給付制度",
+   note:"厚生労働省｜一般／特定一般／専門実践の区分",
+   url:"https://www.mhlw.go.jp/stf/seisakunitsuite/bunya/koyou_roudou/jinzaikaihatsu/kyouiku.html"},
+  {title:"講座指定について",
+   note:"厚生労働省｜指定の仕組みと指定期間（3年）",
+   url:"https://www.mhlw.go.jp/stf/seisakunitsuite/bunya/koyou_roudou/jinzaikaihatsu/kyouiku_00001.html"},
+  {title:"No.4510 教育資金の一括贈与を受けた場合の非課税",
+   note:"国税庁｜制度そのものの根拠",
+   url:"https://www.nta.go.jp/taxes/shiraberu/taxanswer/zoyo/4510.htm"},
+];
+
+function buildTrainingLinks(){
+  const ext = '<svg class="ext" viewBox="0 0 24 24" width="15" height="15" aria-hidden="true">'+
+    '<path d="M14 4h6v6M20 4l-8.5 8.5M18 14v5a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1h5" '+
+    'fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+  $("trainingLinks").innerHTML = TRAINING_LINKS.map(l =>
+    '<a class="linkcard'+(l.main?" main":"")+'" href="'+l.url+'" target="_blank" rel="noopener noreferrer">'+
+      '<span><span class="lt">'+esc(l.title)+'</span><span class="lh">'+esc(l.note)+'</span></span>'+ext+
+    '</a>'
+  ).join("");
+}
+
+function renderTraining(){
+  const y23 = birthPlus(23);
+  if(!y23){
+    $("age23Status").innerHTML =
+      '<div class="alert info">基本情報に生年月日を登録すると、23歳の誕生日と、確認が必要な支出をここに表示します。</div>';
+    $("post23List").innerHTML = "";
+    return;
+  }
+  const iso = isoOf(y23);
+  const now = new Date();
+  const passed = now >= y23;
+  const days = Math.ceil((y23 - now)/86400000);
+
+  $("age23Status").innerHTML = '<div class="rows">'+
+    '<div class="row"><span class="l">23歳の誕生日</span><span class="r">'+fmtDate(iso)+'</span></div>'+
+    '<div class="row"><span class="l">この日から</span><span class="r">'+
+      (passed ? "対象が教育訓練給付金の講座に限られています"
+              : "あと約"+Math.floor(days/365)+"年"+Math.floor((days%365)/30)+"か月")+
+    '</span></div></div>';
+
+  // 23歳の誕生日以後に記録された「学校等以外」を並べる
+  const late = state.spends.filter(s => s.cat === "other" && s.date >= iso)
+                           .sort((a,b)=>(a.date||"").localeCompare(b.date||""));
+  if(!late.length){
+    $("post23List").innerHTML = passed
+      ? '<div class="alert info">23歳の誕生日以後に記録された「学校等以外」の支出はありません。</div>'
+      : "";
+    return;
+  }
+  const sum = late.reduce((a,s)=>a+s.amount,0);
+  $("post23List").innerHTML =
+    '<div class="alert">23歳の誕生日以後の「学校等以外」の支出が '+late.length+'件（'+yen(sum)+'）あります。'+
+    '教育訓練給付金の対象講座でない場合は、非課税の対象になりません。</div>'+
+    '<div class="rows">'+ late.map(s =>
+      '<div class="row"><span class="l">'+fmtDate(s.date)+'　'+esc(s.memo||"（内容なし）")+'</span>'+
+      '<span class="r">'+yen(s.amount)+'</span></div>').join("") +'</div>'+
+    '<div class="hint">内容を直すときは<a href="#/spend">支出の記録</a>から編集できます。</div>';
+}
+
 // ---- ホーム（まとめ） ----
 
 function setNavSub(key, text){
@@ -1032,6 +1183,10 @@ function renderHome(c){
     ? state.contributions.length+"件・合計 "+yen(c.principal) : "未登録");
   setNavSub("/spend", state.spends.length
     ? "学校等 "+nSchool+"件／学校等以外 "+nOther+"件・合計 "+yen(c.spTotal) : "未登録");
+  const y23 = birthPlus(23);
+  setNavSub("/training", !y23 ? "厚労省の対象講座を検索"
+    : (new Date() >= y23 ? "23歳以降：対象は給付金の講座に限られます"
+                         : "23歳の誕生日（"+fmtDate(isoOf(y23))+"）から必要になります"));
   setNavSub("/quota", "残り "+man(c.totalLeft)+"（学校等以外 "+man(c.otherLeft)+"）");
   setNavSub("/sim",   state.contributions.length
     ? "贈与税 "+yen(f.tax)+" ／ 手元 "+yen(f.net) : "原資を登録すると計算されます");
@@ -1046,6 +1201,7 @@ const PAGES = [
   {key:"/basic", id:"page-basic", title:"基本情報",                 nav:"基本情報",           sub:"受贈者・契約"},
   {key:"/fund",  id:"page-fund",  title:"原資の記録",               nav:"原資の記録",          sub:"拠出した金額"},
   {key:"/spend", id:"page-spend", title:"支出の記録",               nav:"支出の記録",          sub:"学校等／学校等以外"},
+  {key:"/training", id:"page-training", title:"23歳以降に使える講座", nav:"23歳以降に使える講座", sub:"厚労省の対象講座を検索"},
   {key:"/quota", id:"page-quota", title:"非課税枠の消化状況",         nav:"非課税枠の消化状況",    sub:"あといくら使えるか"},
   {key:"/sim",   id:"page-sim",   title:"30歳満期シミュレーション",    nav:"満期シミュレーション",  sub:"贈与税と手元に残る額"},
   {key:"/data",  id:"page-data",  title:"データと計算の前提",          nav:"データと計算の前提",   sub:"バックアップ・免責"},
@@ -1125,7 +1281,12 @@ function closeDrawer(){
 
 function esc(s){ return String(s).replace(/[&<>"]/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c])); }
 function uid(){ return Date.now().toString(36)+Math.random().toString(36).slice(2,7); }
-function today(){ return new Date().toISOString().slice(0,10); }
+/** Date を "YYYY-MM-DD" にする。toISOString はUTCに直すため、日本時間だと
+ *  日付が1日前にずれる（深夜0時〜朝9時、および現地0時のDate）。ここは必ず現地日付で扱う。 */
+function isoOf(d){
+  return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0");
+}
+function today(){ return isoOf(new Date()); }
 
 // ---- イベント ----
 ["birth","recipient","contractDate"].forEach(id=>{
@@ -1388,6 +1549,7 @@ $("themeSwitch").addEventListener("click", e=>{
 
 applyTheme();
 buildNav();
+buildTrainingLinks();
 $("cDate").value = today();
 $("sDate").value = today();
 render();
