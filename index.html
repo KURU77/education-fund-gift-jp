@@ -153,8 +153,10 @@ body{
 .navcard .ns{display:block; font-size:11.5px; color:var(--muted)}
 .navcard .chev{margin-left:auto; color:var(--muted); flex:0 0 auto}
 
-/* ── 各ページ末尾の「まとめに戻る」 ─────────────────── */
+/* ── 「まとめに戻る」。各ページの先頭と末尾の両方に置く ───────── */
 .backhome{display:flex; justify-content:center; margin:6px 0 10px}
+/* 先頭のものは戻る導線として自然な左寄せにする */
+.backhome.top{justify-content:flex-start; margin:0 0 14px}
 .backhome a{
   display:inline-flex; align-items:center; gap:8px; min-height:46px;
   padding:10px 22px; border-radius:999px; text-decoration:none;
@@ -395,6 +397,7 @@ footer.note b{color:var(--text)}
 
 <!-- 1. 基本情報 -->
 <section class="page" id="page-basic" hidden>
+<div class="backhome top"><a href="#/">まとめページに戻る</a></div>
 <div class="card">
   <h2><span class="num">1</span>基本情報</h2>
   <div class="grid g3">
@@ -418,6 +421,7 @@ footer.note b{color:var(--text)}
 
 <!-- 2. 原資 -->
 <section class="page" id="page-fund" hidden>
+<div class="backhome top"><a href="#/">まとめページに戻る</a></div>
 <div class="card" id="cCard">
   <h2><span class="num">2</span>原資（非課税拠出額）の記録</h2>
   <div class="editnote" id="cEditNote" hidden></div>
@@ -454,6 +458,7 @@ footer.note b{color:var(--text)}
 
 <!-- 3. 支出 -->
 <section class="page" id="page-spend" hidden>
+<div class="backhome top"><a href="#/">まとめページに戻る</a></div>
 <div class="card" id="sCard">
   <h2><span class="num">3</span>教育資金の支出（払出し）記録</h2>
   <div class="editnote" id="sEditNote" hidden></div>
@@ -496,6 +501,7 @@ footer.note b{color:var(--text)}
 
 <!-- 4. 残枠 -->
 <section class="page" id="page-quota" hidden>
+<div class="backhome top"><a href="#/">まとめページに戻る</a></div>
 <div class="card">
   <h2><span class="num">4</span>非課税枠の消化状況</h2>
   <div class="meterbox">
@@ -527,6 +533,7 @@ footer.note b{color:var(--text)}
 
 <!-- 5. 満期シミュレーション -->
 <section class="page" id="page-sim" hidden>
+<div class="backhome top"><a href="#/">まとめページに戻る</a></div>
 <div class="card">
   <h2><span class="num">5</span>30歳満期シミュレーション</h2>
 
@@ -580,6 +587,7 @@ footer.note b{color:var(--text)}
 
 <!-- 6. データと計算の前提 -->
 <section class="page" id="page-data" hidden>
+<div class="backhome top"><a href="#/">まとめページに戻る</a></div>
 <div class="card">
   <h2>データの保存と書き出し</h2>
   <div class="toolbar">

@@ -11,7 +11,7 @@
  * 収録ファイルを増やしたときは PRECACHE に足し、VERSION を上げる。
  */
 
-const VERSION = 'v4';
+const VERSION = 'v5';
 const CACHE = `education-fund-gift-${VERSION}`;
 
 /** 初回インストール時にまとめて取っておくファイル。これだけあればオフラインでも開ける。 */
