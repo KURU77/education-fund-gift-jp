@@ -203,7 +203,9 @@ body{
 .g2{grid-template-columns:repeat(2,minmax(0,1fr))}
 .g3{grid-template-columns:repeat(3,minmax(0,1fr))}
 .g4{grid-template-columns:repeat(4,minmax(0,1fr))}
-@media(max-width:760px){ .g2,.g3,.g4{grid-template-columns:1fr} }
+.g5{grid-template-columns:repeat(5,minmax(0,1fr))}
+@media(max-width:1000px){ .g5{grid-template-columns:repeat(2,minmax(0,1fr))} }
+@media(max-width:760px){ .g2,.g3,.g4,.g5{grid-template-columns:1fr} }
 label.f{display:block; font-size:11.5px; color:var(--muted); margin-bottom:4px}
 input,select,button,textarea{font:inherit; color:inherit}
 input,select{
@@ -265,6 +267,9 @@ tbody tr:hover{background:var(--panel2)}
 .tag{display:inline-block; padding:1px 8px; border-radius:20px; font-size:11.5px; white-space:nowrap}
 .tag.school{background:var(--school-soft); color:var(--school)}
 .tag.other{background:var(--other-soft); color:var(--other)}
+.tag.planned{background:var(--accent-soft); color:var(--accent); margin-left:4px}
+/* 予定の行は、実績と一目で見分けられるように薄くする */
+tbody tr.plannedrow td:not(.act){opacity:.72}
 .meterbox{margin-bottom:16px}
 .meterhead{display:flex; justify-content:space-between; align-items:baseline; margin-bottom:6px; gap:10px}
 .meterhead .name{font-size:13px; font-weight:600}
@@ -417,7 +422,7 @@ footer.note b{color:var(--text)}
     <div class="kpis kpis2">
       <div class="kpi"><div class="k">「学校等」に使える残枠</div><div class="v" id="hSchoolLeft">–</div></div>
       <div class="kpi"><div class="k">「学校等以外」に使える残枠</div><div class="v" id="hOtherLeft">–</div></div>
-      <div class="kpi"><div class="k">口座残高</div><div class="v" id="hBalance">–</div></div>
+      <div class="kpi"><div class="k">口座残高（実績のみ）</div><div class="v" id="hBalance">–</div></div>
       <div class="kpi"><div class="k">満期に手元に残る額</div><div class="v pos" id="hNet">–</div></div>
     </div>
 
@@ -511,7 +516,14 @@ footer.note b{color:var(--text)}
 <div class="card" id="sCard">
   <h2><span class="num">3</span>教育資金の支出（払出し）記録</h2>
   <div class="editnote" id="sEditNote" hidden></div>
-  <div class="grid g4">
+  <div class="grid g5">
+    <div>
+      <label class="f" for="sState">状態</label>
+      <select id="sState">
+        <option value="actual">実績（支払い済み）</option>
+        <option value="planned">予定（これから）</option>
+      </select>
+    </div>
     <div>
       <label class="f" for="sDate">支払日</label>
       <input type="date" id="sDate">
@@ -536,6 +548,11 @@ footer.note b{color:var(--text)}
   <div class="formact" style="margin-top:12px">
     <button class="primary" id="addS">支出を追加</button>
     <button type="button" id="cancelS" hidden>キャンセル</button>
+  </div>
+  <div class="hint">
+    <b>実績</b>はすでに口座から払い出された分、<b>予定</b>はこれから支払う分です。
+    予定は口座残高や残枠からは引かず、30歳満期シミュレーションにだけ反映されます。
+    支払いが済んだら「編集」から実績に切り替えてください。
   </div>
   <div id="sWarn" style="margin-top:12px"></div>
   <div class="subhead">支出履歴</div>
@@ -620,8 +637,8 @@ footer.note b{color:var(--text)}
   <div class="kpis" style="margin-top:18px">
     <div class="kpi"><div class="k">「学校等」に使える残枠</div><div class="v" id="kSchoolLeft">–</div><div class="s">＝全体残枠</div></div>
     <div class="kpi"><div class="k">「学校等以外」に使える残枠</div><div class="v" id="kOtherLeft">–</div><div class="s">500万円枠と全体枠の小さい方</div></div>
-    <div class="kpi"><div class="k">口座残高（原資−払出し）</div><div class="v" id="kBalance">–</div><div class="s">実際に口座に残る額</div></div>
-    <div class="kpi"><div class="k">管理残額（課税対象見込み）</div><div class="v" id="kManaged">–</div><div class="s">非課税拠出額−教育資金支出額</div></div>
+    <div class="kpi"><div class="k">口座残高（原資−払出し）</div><div class="v" id="kBalance">–</div><div class="s">実績のみ。銀行の残高と一致するはず</div></div>
+    <div class="kpi"><div class="k">管理残額（いま終わった場合）</div><div class="v" id="kManaged">–</div><div class="s">非課税拠出額−教育資金支出額</div></div>
   </div>
   <div id="capWarn" style="margin-top:14px"></div>
 </div>
@@ -634,10 +651,11 @@ footer.note b{color:var(--text)}
 <div class="backhome top"><a href="#/">まとめページに戻る</a></div>
 <div class="card">
   <h2><span class="num">5</span>30歳満期シミュレーション</h2>
+  <div id="plannedNote"></div>
 
   <div class="grid g4">
     <div>
-      <label class="f" for="pSchool">満期までの追加支出見込み：学校等（円）</label>
+      <label class="f" for="pSchool">さらに追加で見込む額：学校等（円）</label>
       <input type="number" id="pSchool" min="0" step="10000" inputmode="numeric" value="0">
       <div class="echo" id="pSchoolEcho"></div>
     </div>
@@ -750,6 +768,16 @@ let state = load();
 /** 編集中のレコードID。保存はしないので、開き直せば通常の入力欄に戻る。 */
 let editingC = null, editingS = null;
 
+/** 「予定」フラグが無い古いデータを読めるようにする。
+ *  未来日付の支出は実績でありえないので、予定として取り込む。 */
+function normalizeSpends(list){
+  if(!Array.isArray(list)) return [];
+  const t = isoOf(new Date());
+  return list.map(s => Object.assign({}, s, {
+    planned: typeof s.planned === "boolean" ? s.planned : (s.date > t)
+  }));
+}
+
 function load(){
   try{
     const raw = localStorage.getItem(KEY);
@@ -758,7 +786,7 @@ function load(){
       return {
         birth:o.birth||"", recipient:o.recipient||"", contractDate:o.contractDate||"",
         contributions:Array.isArray(o.contributions)?o.contributions:[],
-        spends:Array.isArray(o.spends)?o.spends:[],
+        spends:normalizeSpends(o.spends),
         plan:o.plan||{school:0,other:0,otherGift:0,otherGiftType:"special"}
       };
     }
@@ -792,14 +820,21 @@ function taxFrom(table, base){
 }
 
 // ---- 集計 ----
-function compute(extraSchool, extraOther){
+/**
+ * @param extraSchool/extraOther 満期までの追加見込み（円）
+ * @param includePlanned 「予定」の記録も足すか。
+ *   口座残高や残枠は実績だけで見ないと銀行の残高と合わなくなるので、
+ *   現状表示は false、満期の見込みだけ true で呼ぶ。
+ */
+function compute(extraSchool, extraOther, includePlanned){
   extraSchool = extraSchool||0; extraOther = extraOther||0;
 
   const principal = state.contributions.reduce((a,c)=>a+c.amount,0);
   const nonTaxableContrib = Math.min(principal, CAP_TOTAL); // 非課税拠出額
 
-  const spSchool = state.spends.filter(s=>s.cat==="school").reduce((a,s)=>a+s.amount,0) + extraSchool;
-  const spOther  = state.spends.filter(s=>s.cat==="other").reduce((a,s)=>a+s.amount,0) + extraOther;
+  const rows = state.spends.filter(s => includePlanned || !s.planned);
+  const spSchool = rows.filter(s=>s.cat==="school").reduce((a,s)=>a+s.amount,0) + extraSchool;
+  const spOther  = rows.filter(s=>s.cat==="other").reduce((a,s)=>a+s.amount,0) + extraOther;
   const spTotal  = spSchool + spOther;
 
   // 教育資金支出額（学校等以外は500万円まで、かつ全体で非課税拠出額まで）
@@ -866,7 +901,7 @@ function render(){
   renderAge();
   renderContribs();
   renderSpends();
-  const cur = compute(0,0);
+  const cur = compute(0, 0, false);   // 画面上の「いま」は実績だけで見る
   renderQuota(cur);
   renderMaturity(cur);
   renderTraining();
@@ -924,10 +959,11 @@ function renderSpends(){
   }else{
     for(const s of list){
       const tr = document.createElement("tr");
-      if(s.id === editingS) tr.className = "editing";
+      tr.className = (s.id === editingS ? "editing " : "") + (s.planned ? "plannedrow" : "");
       tr.innerHTML =
         '<td data-label="支払日">'+fmtDate(s.date)+"</td>"+
-        '<td data-label="区分"><span class="tag '+(s.cat==="school"?"school":"other")+'">'+(s.cat==="school"?"学校等":"学校等以外")+"</span></td>"+
+        '<td data-label="区分"><span class="tag '+(s.cat==="school"?"school":"other")+'">'+(s.cat==="school"?"学校等":"学校等以外")+"</span>"+
+          (s.planned ? '<span class="tag planned">予定</span>' : "")+"</td>"+
         '<td data-label="内容">'+esc(s.memo||"–")+"</td>"+
         '<td class="num" data-label="金額">'+yen(s.amount)+"</td>"+
         '<td class="num act">'+
@@ -936,6 +972,15 @@ function renderSpends(){
         "</td>";
       tb.appendChild(tr);
     }
+    const act = list.filter(s=>!s.planned).reduce((a,s)=>a+s.amount,0);
+    const pln = list.filter(s=>s.planned).reduce((a,s)=>a+s.amount,0);
+    const tr = document.createElement("tr");
+    tr.className = "totalrow";
+    tr.innerHTML = '<td colspan="2" style="font-weight:600">実績の合計'+
+      (pln ? '<br><span style="font-weight:400;font-size:11.5px">予定の合計</span>' : "")+'</td>'+
+      '<td class="num" colspan="3" style="font-weight:700">'+yen(act)+
+      (pln ? '<br><span style="font-weight:400;font-size:11.5px">'+yen(pln)+'</span>' : "")+'</td>';
+    tb.appendChild(tr);
   }
   // 23歳以降の「学校等以外」支出を警告
   const y23 = birthPlus(23);
@@ -994,7 +1039,7 @@ function renderQuota(c){
 
 /** 満期時点の見込み。ホームと満期ページの両方から使うので、計算はここ1か所にまとめる。 */
 function maturityFigures(){
-  const mat = compute(state.plan.school, state.plan.other);
+  const mat = compute(state.plan.school, state.plan.other, true);   // 満期見込みは予定も込み
   const otherGift = state.plan.otherGift;
   const otherIsGeneral = state.plan.otherGiftType === "general";
 
@@ -1039,6 +1084,15 @@ function renderMaturity(cur){
   ];
   $("matRight").innerHTML = R.map(r =>
     '<div class="row'+(r[2]?" total":"")+'"><span class="l">'+r[0]+'</span><span class="r">'+r[1]+'</span></div>').join("");
+
+  // 「予定」として登録済みの分は、下の入力欄とは別にすでに差し引かれている
+  const pl = state.spends.filter(s=>s.planned);
+  const plS = pl.filter(s=>s.cat==="school").reduce((a,s)=>a+s.amount,0);
+  const plO = pl.filter(s=>s.cat==="other").reduce((a,s)=>a+s.amount,0);
+  $("plannedNote").innerHTML = pl.length
+    ? '<div class="alert info">「予定」として登録済みの支出 '+pl.length+'件（学校等 '+yen(plS)+' ／ 学校等以外 '+yen(plO)+
+      '）は、この試算にすでに含まれています。下の欄には、それ以外に見込む額だけを入れてください。</div>'
+    : "";
 
   const m = maturityDate();
   $("kMatDate").textContent = m ? (m.getFullYear()+"/"+String(m.getMonth()+1).padStart(2,"0")+"/"+String(m.getDate()).padStart(2,"0")) : "–";
@@ -1133,7 +1187,8 @@ function renderTraining(){
     '<div class="alert">23歳の誕生日以後の「学校等以外」の支出が '+late.length+'件（'+yen(sum)+'）あります。'+
     '教育訓練給付金の対象講座でない場合は、非課税の対象になりません。</div>'+
     '<div class="rows">'+ late.map(s =>
-      '<div class="row"><span class="l">'+fmtDate(s.date)+'　'+esc(s.memo||"（内容なし）")+'</span>'+
+      '<div class="row"><span class="l">'+fmtDate(s.date)+'　'+esc(s.memo||"（内容なし）")+
+      (s.planned ? '<span class="tag planned">予定</span>' : "")+'</span>'+
       '<span class="r">'+yen(s.amount)+'</span></div>').join("") +'</div>'+
     '<div class="hint">内容を直すときは<a href="#/spend">支出の記録</a>から編集できます。</div>';
 }
@@ -1350,10 +1405,11 @@ function startEditS(id){
   const s = state.spends.find(x=>x.id===id);
   if(!s) return;
   editingS = id;
-  $("sDate").value = s.date || today();
-  $("sCat").value  = s.cat;
-  $("sMemo").value = s.memo || "";
-  $("sAmt").value  = s.amount;
+  $("sDate").value  = s.date || today();
+  $("sCat").value   = s.cat;
+  $("sState").value = s.planned ? "planned" : "actual";
+  $("sMemo").value  = s.memo || "";
+  $("sAmt").value   = s.amount;
   syncEcho("sAmt");
   $("addS").textContent = "この支出を更新";
   $("cancelS").hidden = false;
@@ -1367,10 +1423,11 @@ function startEditS(id){
 
 function endEditS(){
   editingS = null;
-  $("sDate").value = today();
-  $("sCat").value  = "school";
-  $("sMemo").value = "";
-  $("sAmt").value  = "";
+  $("sDate").value  = today();
+  $("sCat").value   = "school";
+  $("sState").value = "actual";
+  $("sMemo").value  = "";
+  $("sAmt").value   = "";
   syncEcho("sAmt");
   $("addS").textContent = "支出を追加";
   $("cancelS").hidden = true;
@@ -1398,7 +1455,8 @@ $("cancelC").addEventListener("click", endEditC);
 $("addS").addEventListener("click", ()=>{
   const amt = num($("sAmt"));
   if(!amt){ alert("金額を入力してください。"); return; }
-  const rec = {date:$("sDate").value||today(), cat:$("sCat").value, memo:$("sMemo").value.trim(), amount:amt};
+  const rec = {date:$("sDate").value||today(), cat:$("sCat").value, memo:$("sMemo").value.trim(),
+               amount:amt, planned:$("sState").value === "planned"};
   if(editingS){
     const s = state.spends.find(x=>x.id===editingS);
     if(s) Object.assign(s, rec);
@@ -1406,6 +1464,7 @@ $("addS").addEventListener("click", ()=>{
   }else{
     state.spends.push(Object.assign({id:uid()}, rec));
     $("sAmt").value=""; $("sMemo").value=""; syncEcho("sAmt");
+    // 状態は続けて入力しやすいよう、直前の選択を残す
   }
   save(); render();
 });
@@ -1438,9 +1497,9 @@ $("exportJson").addEventListener("click", ()=>{
   a.click(); URL.revokeObjectURL(a.href);
 });
 $("exportCsv").addEventListener("click", ()=>{
-  const rows = [["支払日","区分","内容","金額"]].concat(
+  const rows = [["支払日","状態","区分","内容","金額"]].concat(
     state.spends.slice().sort((a,b)=>(a.date||"").localeCompare(b.date||""))
-      .map(s=>[s.date, s.cat==="school"?"学校等":"学校等以外", s.memo||"", s.amount]));
+      .map(s=>[s.date, s.planned?"予定":"実績", s.cat==="school"?"学校等":"学校等以外", s.memo||"", s.amount]));
   const csv = "﻿" + rows.map(r=>r.map(v=>'"'+String(v).replace(/"/g,'""')+'"').join(",")).join("\r\n");
   const blob = new Blob([csv], {type:"text/csv"});
   const a = document.createElement("a");
@@ -1550,6 +1609,10 @@ $("themeSwitch").addEventListener("click", e=>{
 applyTheme();
 buildNav();
 buildTrainingLinks();
+// 予定フラグを持たない古いデータは、日付から推測した結果をここで一度だけ書き戻す。
+// 保存しておかないと、予定日が過ぎた次回の起動で「未来日付ではない」と判定され、
+// 予定が黙って実績に化けて残高がずれる。
+save();
 $("cDate").value = today();
 $("sDate").value = today();
 render();
