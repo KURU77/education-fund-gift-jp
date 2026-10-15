@@ -158,6 +158,43 @@ body{
 .navcard .ns{display:block; font-size:11.5px; color:var(--muted)}
 .navcard .chev{margin-left:auto; color:var(--muted); flex:0 0 auto}
 
+/* ── 満期受取額の比較表（実績のみ／予定込み） ─────────────
+   狭い画面で表をカードに組み替える規則（tbody 向け）に巻き込まれないよう、div のグリッドで組む */
+.cmpgrid{
+  display:grid; grid-template-columns:minmax(0,1.25fr) minmax(0,1fr) minmax(0,1fr);
+  border:1px solid var(--line); border-radius:12px; overflow:hidden; background:var(--panel);
+}
+.cmpgrid > div{padding:9px 12px; border-bottom:1px solid var(--line); font-size:13px; font-variant-numeric:tabular-nums}
+.cmpgrid > div:nth-last-child(-n+3){border-bottom:none}
+.cmpgrid .n{text-align:right; white-space:nowrap}
+.cmpgrid .h{background:var(--panel2); color:var(--muted); font-size:11.5px; font-weight:700}
+.cmpgrid .total{background:var(--school-soft); color:var(--school); font-weight:700; font-size:14px}
+@media(max-width:430px){ .cmpgrid > div{padding:9px 8px; font-size:12.5px} .cmpgrid .total{font-size:13px} }
+
+/* ── 端末間の同期 ─────────────────────────── */
+.syncchip{display:flex; align-items:center; gap:8px; font-size:12px; color:var(--muted); margin:-6px 2px 14px; min-height:20px}
+.syncchip:empty{display:none}
+.syncchip a{color:var(--accent)}
+.syncchip .dot{width:8px; height:8px; border-radius:50%; background:var(--muted); flex:0 0 auto}
+.syncchip.ok .dot{background:var(--school)}
+.syncchip.syncing .dot{background:var(--accent)}
+.syncchip.login .dot, .syncchip.error .dot{background:var(--danger)}
+.syncchip.login, .syncchip.error{color:var(--danger)}
+.syncchip button.mini{margin-left:4px}
+.syncacct{display:flex; align-items:center; justify-content:space-between; gap:12px; flex-wrap:wrap}
+.syncacct .who{font-weight:700; overflow-wrap:anywhere}
+.syncacct .st{font-size:12px; color:var(--muted)}
+.syncacct .st.login, .syncacct .st.error{color:var(--danger)}
+.syncbtns{display:flex; gap:8px; flex-wrap:wrap; margin-top:12px}
+.toast{
+  position:fixed; left:50%; transform:translateX(-50%); z-index:50;
+  bottom:calc(20px + env(safe-area-inset-bottom));
+  max-width:min(92vw,420px); padding:10px 16px; border-radius:10px;
+  background:var(--text); color:var(--panel); font-size:13px; line-height:1.6;
+  box-shadow:0 10px 30px rgba(51,61,71,.2); text-align:center;
+}
+.toast[hidden]{display:none}
+
 /* ── 外部サイトへのリンク一覧 ─────────────────────── */
 .linklist{display:grid; gap:10px}
 .linkcard{
@@ -416,6 +453,7 @@ footer.note b{color:var(--text)}
 <section class="page" id="page-home">
 
   <div class="hero" id="hero"></div>
+  <div class="syncchip" id="homeSync"></div>
 
   <div class="card">
     <h2>非課税枠の残り</h2>
@@ -423,7 +461,9 @@ footer.note b{color:var(--text)}
       <div class="kpi"><div class="k">「学校等」に使える残枠</div><div class="v" id="hSchoolLeft">–</div></div>
       <div class="kpi"><div class="k">「学校等以外」に使える残枠</div><div class="v" id="hOtherLeft">–</div></div>
       <div class="kpi"><div class="k">口座残高（実績のみ）</div><div class="v" id="hBalance">–</div></div>
-      <div class="kpi"><div class="k">満期に手元に残る額</div><div class="v pos" id="hNet">–</div></div>
+      <div class="kpi"><div class="k">予定の支出合計</div><div class="v" id="hPlanned">–</div></div>
+      <div class="kpi"><div class="k">満期受取額（実績のみ）</div><div class="v pos" id="hNetActual">–</div><div class="s">今後使わない場合</div></div>
+      <div class="kpi"><div class="k">満期受取額（予定込み）</div><div class="v pos" id="hNet">–</div><div class="s">予定どおり使った場合</div></div>
     </div>
 
     <div class="meterbox" style="margin-top:18px">
@@ -678,22 +718,26 @@ footer.note b{color:var(--text)}
     </div>
   </div>
 
+  <div class="kpis" style="margin-top:20px">
+    <div class="kpi"><div class="k">30歳到達日（契約終了日）</div><div class="v" id="kMatDate" style="font-size:16px">–</div><div class="s" id="kMatSub"></div></div>
+    <div class="kpi"><div class="k">満期受取額（実績のみ）</div><div class="v pos" id="kNetActual">–</div><div class="s">今後この口座から使わない場合</div></div>
+    <div class="kpi"><div class="k">満期受取額（予定込み）</div><div class="v pos" id="kMatNet">–</div><div class="s">予定・見込みどおり使った場合</div></div>
+    <div class="kpi"><div class="k">贈与税（予定込み）</div><div class="v neg" id="kMatTax">–</div><div class="s" id="kMatRate"></div></div>
+  </div>
+
+  <div class="subhead" style="margin-top:20px">実績のみ と 予定込み の比較</div>
+  <div class="cmpgrid" id="matCompare"></div>
+  <div class="hint" id="matCompareNote"></div>
+
   <div class="split" style="margin-top:20px">
     <div>
-      <div class="subhead">満期時点の残額</div>
+      <div class="subhead">満期時点の残額（予定込み）</div>
       <div class="rows" id="matLeft"></div>
     </div>
     <div>
-      <div class="subhead">贈与税の計算</div>
+      <div class="subhead">贈与税の計算（予定込み）</div>
       <div class="rows" id="matRight"></div>
     </div>
-  </div>
-
-  <div class="kpis" style="margin-top:20px">
-    <div class="kpi"><div class="k">30歳到達日（契約終了日）</div><div class="v" id="kMatDate" style="font-size:16px">–</div><div class="s" id="kMatSub"></div></div>
-    <div class="kpi"><div class="k">満期時の口座残高</div><div class="v" id="kMatBal">–</div><div class="s">払戻される元の金額</div></div>
-    <div class="kpi"><div class="k">かかる贈与税</div><div class="v neg" id="kMatTax">–</div><div class="s" id="kMatRate"></div></div>
-    <div class="kpi"><div class="k">手元に残る金額</div><div class="v pos" id="kMatNet">–</div><div class="s">残高 − 贈与税</div></div>
   </div>
   <div id="matWarn" style="margin-top:14px"></div>
 </div>
@@ -701,9 +745,14 @@ footer.note b{color:var(--text)}
 <div class="backhome"><a href="#/">まとめページに戻る</a></div>
 </section>
 
-<!-- 6. データと計算の前提 -->
+<!-- 6. 同期とデータ -->
 <section class="page" id="page-data" hidden>
 <div class="backhome top"><a href="#/">まとめページに戻る</a></div>
+<div class="card" id="syncCard">
+  <h2>端末間の同期（Google アカウント）</h2>
+  <div id="syncBody"></div>
+</div>
+
 <div class="card">
   <h2>データの保存と書き出し</h2>
   <div class="toolbar">
@@ -714,7 +763,7 @@ footer.note b{color:var(--text)}
     <div class="spacer"></div>
     <button id="resetAll" style="color:var(--danger)">全データ削除</button>
   </div>
-  <div class="hint">データはこのブラウザ内（localStorage）にのみ保存されます。外部へ送信されることはありません。</div>
+  <div class="hint">データはこのブラウザ内に保存されます。上の同期をオンにしたときだけ、あなたの Google ドライブの「アプリ専用領域」にも保存されます（ドライブの画面には出ず、ほかの人やほかのアプリからは見えません）。</div>
 </div>
 
 <footer class="note">
@@ -737,6 +786,8 @@ footer.note b{color:var(--text)}
   <button type="button" id="updateNow">更新</button>
   <button type="button" id="updateLater" class="mini">あとで</button>
 </div>
+
+<div class="toast" id="toast" hidden role="status" aria-live="polite"></div>
 
 <div class="banner" id="installBanner" hidden>
   <p>ホーム画面に追加すると、電波がなくても開けます。共有ボタン → 「ホーム画面に追加」</p>
@@ -778,24 +829,47 @@ function normalizeSpends(list){
   }));
 }
 
+// 関数宣言にしておくこと。上の `let state = load()` がこの行より先に走るので、
+// const にすると初期化前参照で起動時に止まる（データの無い新しい端末で必ず起きる）。
+function DEFAULT_PLAN(){ return {school:0,other:0,otherGift:0,otherGiftType:"special"}; }
+function blankState(){
+  return {birth:"",recipient:"",contractDate:"",contributions:[],spends:[],plan:DEFAULT_PLAN(),
+          profileU:{}, deleted:{}};
+}
+/** 同期用の付帯情報（基本情報の項目ごとの更新時刻、削除の墓標）を整える。
+ *  更新時刻を持たない古いデータは、値の入っている項目だけ 1 とする。
+ *  何も入れていない新しい端末（0）が、既存端末の生年月日を空で上書きしないため。 */
+function normalizeMeta(o){
+  const pu = (o.profileU && typeof o.profileU === "object") ? o.profileU : {};
+  const planSet = !!o.plan && JSON.stringify(o.plan) !== JSON.stringify(DEFAULT_PLAN());
+  return {
+    profileU: {
+      birth:        +pu.birth        || (o.birth ? 1 : 0),
+      recipient:    +pu.recipient    || (o.recipient ? 1 : 0),
+      contractDate: +pu.contractDate || (o.contractDate ? 1 : 0),
+      plan:         +pu.plan         || (planSet ? 1 : 0)
+    },
+    deleted: (o.deleted && typeof o.deleted === "object" && !Array.isArray(o.deleted)) ? o.deleted : {}
+  };
+}
+function fromObject(o){
+  return Object.assign({
+    birth:o.birth||"", recipient:o.recipient||"", contractDate:o.contractDate||"",
+    contributions:Array.isArray(o.contributions)?o.contributions:[],
+    spends:normalizeSpends(o.spends),
+    plan:o.plan||DEFAULT_PLAN()
+  }, normalizeMeta(o));
+}
 function load(){
   try{
     const raw = localStorage.getItem(KEY);
-    if(raw){
-      const o = JSON.parse(raw);
-      return {
-        birth:o.birth||"", recipient:o.recipient||"", contractDate:o.contractDate||"",
-        contributions:Array.isArray(o.contributions)?o.contributions:[],
-        spends:normalizeSpends(o.spends),
-        plan:o.plan||{school:0,other:0,otherGift:0,otherGiftType:"special"}
-      };
-    }
+    if(raw) return fromObject(JSON.parse(raw));
   }catch(e){}
-  return {birth:"",recipient:"",contractDate:"",contributions:[],spends:[],
-          plan:{school:0,other:0,otherGift:0,otherGiftType:"special"}};
+  return blankState();
 }
 let storageWarned = false;
 function save(){
+  stampChanges();   // 変わった記録に更新時刻を押し、消えた記録は墓標にする（同期用）
   try{
     localStorage.setItem(KEY, JSON.stringify(state));
   }catch(e){
@@ -805,6 +879,7 @@ function save(){
       if(el) el.innerHTML = '<div class="alert">このブラウザでは保存領域が使えないため、入力内容はページを閉じると失われます（プライベートブラウズ等）。「バックアップを保存」でファイルに書き出してください。</div>';
     }
   }
+  afterSave();      // 同期中なら数秒後にクラウドへ送る
 }
 
 const $ = id => document.getElementById(id);
@@ -1037,10 +1112,17 @@ function renderQuota(c){
   $("capWarn").innerHTML = quotaWarnHtml(c);
 }
 
-/** 満期時点の見込み。ホームと満期ページの両方から使うので、計算はここ1か所にまとめる。 */
-function maturityFigures(){
-  const mat = compute(state.plan.school, state.plan.other, true);   // 満期見込みは予定も込み
-  const otherGift = state.plan.otherGift;
+/**
+ * 満期時点の見込み。ホームと満期ページの両方から使うので、計算はここ1か所にまとめる。
+ * @param includePlanned
+ *   false：実績のみ。これまでに払った分だけで、今後この口座から一切使わない場合
+ *   true ：予定込み。「予定」の記録と、満期ページの追加見込みもすべて使った場合
+ */
+function maturityFigures(includePlanned){
+  const mat = includePlanned
+    ? compute(state.plan.school, state.plan.other, true)
+    : compute(0, 0, false);
+  const otherGift = state.plan.otherGift;   // 満期年のその他の贈与は支出ではないので両方に効く
   const otherIsGeneral = state.plan.otherGiftType === "general";
 
   // 課税価格
@@ -1056,11 +1138,35 @@ function maturityFigures(){
     tax = tg * (genPart/giftTotal) + ts * (spePart/giftTotal);
     tax = Math.floor(tax/100)*100; // 100円未満切捨て
   }
-  return {mat, otherGift, base, tax, balance:mat.balance, net:mat.balance - tax};
+  return {mat, otherGift, base, tax, spent:mat.spTotal, balance:mat.balance, net:mat.balance - tax};
+}
+
+/** 実績のみ／予定込みの比較表 */
+function renderMaturityCompare(a, b){
+  const rows = [
+    ["使う教育費の合計", yen(a.spent), yen(b.spent)],
+    ["満期時の残高", yen(a.balance), yen(b.balance)],
+    ["贈与税", yen(a.tax), yen(b.tax)],
+    ["満期受取額", yen(a.net), yen(b.net), "total"],
+  ];
+  $("matCompare").innerHTML =
+    '<div class="h"></div><div class="h n">実績のみ</div><div class="h n">予定込み</div>' +
+    rows.map(r => '<div class="'+(r[3]||"")+'">'+r[0]+'</div><div class="n '+(r[3]||"")+'">'+r[1]+'</div><div class="n '+(r[3]||"")+'">'+r[2]+'</div>').join("");
+
+  const more = b.spent - a.spent, less = a.net - b.net, taxDown = a.tax - b.tax;
+  $("matCompareNote").innerHTML =
+    '<b>実績のみ</b>＝これまでに払った分だけで、今後この口座から使わない場合。' +
+    '<b>予定込み</b>＝「予定」の支出と上の追加見込みも、すべて使った場合。' +
+    (more > 0
+      ? '<br>予定どおり '+yen(more)+' を教育費に使うと、満期受取額は '+yen(less)+' 減ります。' +
+        '差の '+yen(taxDown)+' は、使わなければ贈与税として払うはずだった分です。'
+      : '');
 }
 
 function renderMaturity(cur){
-  const f = maturityFigures();
+  const f = maturityFigures(true);
+  const fa = maturityFigures(false);
+  renderMaturityCompare(fa, f);
   const mat = f.mat, otherGift = f.otherGift, base = f.base, tax = f.tax;
   const matBalance = f.balance, net = f.net;
 
@@ -1097,9 +1203,9 @@ function renderMaturity(cur){
   const m = maturityDate();
   $("kMatDate").textContent = m ? (m.getFullYear()+"/"+String(m.getMonth()+1).padStart(2,"0")+"/"+String(m.getDate()).padStart(2,"0")) : "–";
   $("kMatSub").textContent = state.recipient ? state.recipient+" さんが30歳" : "受贈者が30歳に達する日";
-  $("kMatBal").textContent = yen(matBalance);
+  $("kNetActual").textContent = state.contributions.length ? yen(fa.net) : "–";
   $("kMatTax").textContent = yen(tax);
-  $("kMatNet").textContent = yen(net);
+  $("kMatNet").textContent = state.contributions.length ? yen(net) : "–";
   const effRate = matBalance>0 ? (tax/matBalance*100) : 0;
   $("kMatRate").textContent = tax>0 ? ("残高に対する実効税率 "+ (Math.round(effRate*10)/10) +"%") : "課税なし";
 
@@ -1201,7 +1307,8 @@ function setNavSub(key, text){
 }
 
 function renderHome(c){
-  const f = maturityFigures();
+  const f  = maturityFigures(true);    // 予定込み
+  const fa = maturityFigures(false);   // 実績のみ
   const m = maturityDate();
   const a = ageNow();
 
@@ -1224,7 +1331,10 @@ function renderHome(c){
   $("hSchoolLeft").textContent = yen(c.totalLeft);
   $("hOtherLeft").textContent  = yen(c.otherLeft);
   $("hBalance").textContent    = yen(c.balance);
-  $("hNet").textContent        = state.contributions.length ? yen(f.net) : "–";
+  const hasFund = state.contributions.length > 0;
+  $("hPlanned").textContent    = yen(state.spends.filter(s=>s.planned).reduce((a,s)=>a+s.amount,0) + state.plan.school + state.plan.other);
+  $("hNetActual").textContent  = hasFund ? yen(fa.net) : "–";
+  $("hNet").textContent        = hasFund ? yen(f.net) : "–";
 
   paintMeters({totSchool:"hmTotSchool", totOther:"hmTotOther", totVal:"hTotalMeterVal",
                othUsed:"hmOthUsed", othOver:"hmOthOver", othVal:"hOtherMeterVal"}, c);
@@ -1244,7 +1354,7 @@ function renderHome(c){
                          : "23歳の誕生日（"+fmtDate(isoOf(y23))+"）から必要になります"));
   setNavSub("/quota", "残り "+man(c.totalLeft)+"（学校等以外 "+man(c.otherLeft)+"）");
   setNavSub("/sim",   state.contributions.length
-    ? "贈与税 "+yen(f.tax)+" ／ 手元 "+yen(f.net) : "原資を登録すると計算されます");
+    ? "受取額 実績のみ "+yen(fa.net)+" ／ 予定込み "+yen(f.net) : "原資を登録すると計算されます");
 }
 
 // ---- ページ切り替え ----
@@ -1259,7 +1369,7 @@ const PAGES = [
   {key:"/training", id:"page-training", title:"23歳以降に使える講座", nav:"23歳以降に使える講座", sub:"厚労省の対象講座を検索"},
   {key:"/quota", id:"page-quota", title:"非課税枠の消化状況",         nav:"非課税枠の消化状況",    sub:"あといくら使えるか"},
   {key:"/sim",   id:"page-sim",   title:"30歳満期シミュレーション",    nav:"満期シミュレーション",  sub:"贈与税と手元に残る額"},
-  {key:"/data",  id:"page-data",  title:"データと計算の前提",          nav:"データと計算の前提",   sub:"バックアップ・免責"},
+  {key:"/data",  id:"page-data",  title:"同期とデータ",               nav:"同期とデータ",         sub:"Google 同期・バックアップ・計算の前提"},
 ];
 
 function buildNav(){
@@ -1515,9 +1625,15 @@ $("importFile").addEventListener("change", e=>{
     try{
       const o = JSON.parse(r.result);
       if(!o || !Array.isArray(o.contributions)) throw new Error("形式が不正です");
-      state = {birth:o.birth||"", recipient:o.recipient||"", contractDate:o.contractDate||"",
-               contributions:o.contributions, spends:Array.isArray(o.spends)?o.spends:[],
-               plan:o.plan||{school:0,other:0,otherGift:0,otherGiftType:"special"}};
+      if(SM.signedIn && !confirm("バックアップの内容で置き換えます。\n\n同期中のため、ほかの端末のデータもこの内容に置き換わります。よろしいですか？")) return;
+      // 読み込みは「ファイルの内容で置き換える」操作。読み込んだ記録には新しい時刻を押して
+      // 以前の削除（墓標）より優先させ、ファイルに無い記録は墓標にして他端末からも消す。
+      const next = Object.assign(fromObject(o), {
+        deleted: Object.assign({}, state.deleted),
+        profileU: Object.assign({}, state.profileU)
+      });
+      eachRecord(next, rec => { rec._u = 0; delete SHADOW[rec.id]; });
+      state = next;
       endEditC(); endEditS();   // 編集中のIDは読み込んだデータには無いので必ず抜ける
       save(); render(); alert("読み込みました。");
     }catch(err){ alert("読み込みに失敗しました："+err.message); }
@@ -1526,11 +1642,374 @@ $("importFile").addEventListener("change", e=>{
   e.target.value = "";
 });
 $("resetAll").addEventListener("click", ()=>{
-  if(confirm("すべてのデータを削除します。よろしいですか？")){
-    localStorage.removeItem(KEY);
-    state = load(); endEditC(); endEditS(); render();
+  const msg = SM.signedIn
+    ? "すべてのデータを削除します。\n\n同期中のため、ほかの端末と Google ドライブ上のデータも削除されます。よろしいですか？"
+    : "すべてのデータを削除します。よろしいですか？";
+  if(confirm(msg)){
+    // 墓標を残したまま空にする。保存時に全記録が墓標になり、同期中なら他端末からも消える
+    state = Object.assign(blankState(), {
+      deleted: Object.assign({}, state.deleted),
+      profileU: Object.assign({}, state.profileU)
+    });
+    endEditC(); endEditS(); save(); render();
   }
 });
+
+// ==== SYNC-BEGIN ====
+/* ============================================================
+   端末間の同期（Google ドライブのアプリ専用領域）
+   ・データは本人の Google ドライブの「アプリ専用フォルダ」（appDataFolder）に置く。
+     ドライブの画面には出ず、このアプリ以外からは見えない。サーバーは使わない。
+   ・原資・支出の1件ずつに更新時刻 _u を持たせ、削除は state.deleted に
+     墓標（id → 削除時刻）を残す。同期のたびに双方をマージするので、
+     オフラインで別々の端末を編集しても、同じ記録でない限り両方の変更が残る。
+   ・生年月日などの基本情報は「項目ごと」に新しいほうを採る。まとめて1つにすると、
+     別の端末で満期の見込みを触っただけで生年月日まで古い値で上書きされるため。
+   ・手本は lab-desk の同じ節。OAuth クライアントも共有している。
+   ============================================================ */
+var GOOGLE_CLIENT_ID = '1088975026923-gg6ra210l32ql6g7hllg6i11qei8agm9.apps.googleusercontent.com'; // 公開してよい値
+var SYNC_FILE = 'education-fund-gift.json';
+var SCOPE = 'https://www.googleapis.com/auth/drive.appdata';
+var SM_KEY = KEY + ':sync', OAUTH_KEY = KEY + ':oauth', SILENT_KEY = KEY + ':silent';
+var PROFILE_FIELDS = ['birth', 'recipient', 'contractDate', 'plan'];
+var SHADOW = {}, shadowReady = false;
+var SYNC = { running:false, again:false, timer:0, state:'off', detail:'', applying:false, justLoggedIn:false, flash:'' };
+var SM = (function(){ try{ return JSON.parse(localStorage.getItem(SM_KEY)) || {}; }catch(e){ return {}; } })();
+function saveSM(){ try{ localStorage.setItem(SM_KEY, JSON.stringify(SM)); }catch(e){} }
+
+/* ---- 変更の検出 ---- */
+function recSig(r){
+  const o = {};
+  Object.keys(r).sort().forEach(k => { if(k !== '_u') o[k] = r[k]; });
+  return JSON.stringify(o);
+}
+function eachRecord(s, fn){ (s.contributions || []).forEach(fn); (s.spends || []).forEach(fn); }
+/** 読み込んだ直後の状態を「変更なし」の基準として覚える */
+function rebuildShadow(){
+  SHADOW = {};
+  eachRecord(state, r => { if(r.id){ if(!r._u) r._u = 1; SHADOW[r.id] = recSig(r); } });
+  PROFILE_FIELDS.forEach(f => { SHADOW['__p:' + f] = JSON.stringify(state[f]); });
+  shadowReady = true;
+}
+/** 前回の保存から変わった記録に時刻を押し、消えた記録は墓標にする */
+function stampChanges(){
+  if(!shadowReady) return;
+  const now = Date.now(), seen = {};
+  if(!state.deleted) state.deleted = {};
+  if(!state.profileU) state.profileU = {};
+  eachRecord(state, r => {
+    if(!r.id) return;
+    seen[r.id] = 1;
+    const sg = recSig(r);
+    if(SHADOW[r.id] !== sg){ r._u = now; SHADOW[r.id] = sg; }
+    else if(!r._u) r._u = 1;
+  });
+  Object.keys(SHADOW).forEach(id => {
+    if(id.indexOf('__p:') !== 0 && !seen[id]){ state.deleted[id] = now; delete SHADOW[id]; }
+  });
+  PROFILE_FIELDS.forEach(f => {
+    const v = JSON.stringify(state[f]);
+    if(SHADOW['__p:' + f] !== v){ state.profileU[f] = now; SHADOW['__p:' + f] = v; }
+  });
+}
+function afterSave(){
+  if(!SM || !SM.signedIn || SYNC.applying) return;
+  syncSoon();
+}
+
+/* ---- マージ ---- */
+function mergeList(a, b, del){
+  const byId = {};
+  function put(r){
+    if(!r || !r.id) return;
+    const cur = byId[r.id];
+    if(!cur || (r._u || 0) > (cur._u || 0)) byId[r.id] = r;   // 同時刻なら先（手元）を残す
+  }
+  (a || []).forEach(put); (b || []).forEach(put);
+  return Object.keys(byId).sort()
+    .map(id => byId[id])
+    .filter(r => !(del[r.id] && del[r.id] >= (r._u || 0)))
+    .map(r => Object.assign({}, r));
+}
+function mergeState(a, b){
+  const del = {};
+  [a.deleted || {}, b.deleted || {}].forEach(d => Object.keys(d).forEach(id => { del[id] = Math.max(del[id] || 0, +d[id] || 0); }));
+  const out = { profileU:{}, deleted:del };
+  PROFILE_FIELDS.forEach(f => {
+    const ta = (a.profileU || {})[f] || 0, tb = (b.profileU || {})[f] || 0;
+    out[f] = tb > ta ? b[f] : a[f];
+    out.profileU[f] = Math.max(ta, tb);
+  });
+  if(!out.plan) out.plan = DEFAULT_PLAN();
+  out.contributions = mergeList(a.contributions, b.contributions, del);
+  out.spends = normalizeSpends(mergeList(a.spends, b.spends, del));
+  return out;
+}
+/** クラウドに置く形。並び順を id で固定し、端末ごとの並びの違いで無駄に送り直さない */
+function syncPayload(s){
+  const del = {}, byId = (x, y) => x.id < y.id ? -1 : x.id > y.id ? 1 : 0;
+  Object.keys(s.deleted || {}).sort().forEach(k => { del[k] = s.deleted[k]; });
+  const profile = { _u: {} };
+  PROFILE_FIELDS.forEach(f => { profile[f] = s[f]; profile._u[f] = (s.profileU || {})[f] || 0; });
+  return JSON.stringify({ v:1, app:'education-fund-gift', profile,
+    contributions:(s.contributions || []).slice().sort(byId),
+    spends:(s.spends || []).slice().sort(byId), deleted:del });
+}
+function fromPayload(p){
+  const pr = p.profile || {};
+  return fromObject({ birth:pr.birth, recipient:pr.recipient, contractDate:pr.contractDate, plan:pr.plan,
+    profileU:pr._u || {}, contributions:p.contributions, spends:p.spends, deleted:p.deleted });
+}
+
+/* ---- 認証（リダイレクト方式。ホーム画面に追加した iPhone でも動く） ---- */
+function tokenOK(){ return !!(SM.token && SM.exp && Date.now() < SM.exp); }
+function redirectURI(){ return location.origin + location.pathname.replace(/index\.html$/, ''); }
+function login(silent){
+  if(location.protocol === 'file:'){
+    toast('ファイルを直接開いた状態ではログインできません。公開ページ（kuru77.github.io/education-fund-gift-jp/）から開いてください', 5200);
+    return;
+  }
+  if(/Instagram|FBAN|FBAV|Line\//i.test(navigator.userAgent)){
+    toast('アプリ内ブラウザでは Google にログインできません。「…」メニューから Safari などで開いてください', 5200);
+    return;
+  }
+  const st = uid() + uid();
+  try{ sessionStorage.setItem(OAUTH_KEY, JSON.stringify({ st, back: location.hash || '#/', silent: !!silent })); }catch(e){}
+  const q = { client_id:GOOGLE_CLIENT_ID, redirect_uri:redirectURI(), response_type:'token',
+              scope:SCOPE, include_granted_scopes:'true', state:st };
+  if(SM.email) q.login_hint = SM.email;
+  if(silent) q.prompt = 'none';
+  location.href = 'https://accounts.google.com/o/oauth2/v2/auth?' + new URLSearchParams(q).toString();
+}
+/** 起動時：Google から戻ってきたところならトークンを受け取る。
+ *  ページ切り替えもハッシュを使うので、ルーターより先に呼んで元のページへ戻す。 */
+function takeOAuthReturn(){
+  const h = location.hash;
+  if(h.indexOf('access_token=') < 0 && h.indexOf('error=') < 0) return;
+  const q = new URLSearchParams(h.replace(/^#\/?/, ''));
+  let saved = {};
+  try{ saved = JSON.parse(sessionStorage.getItem(OAUTH_KEY)) || {}; sessionStorage.removeItem(OAUTH_KEY); }catch(e){}
+  const back = saved.back && saved.back.indexOf('access_token') < 0 && saved.back.indexOf('error=') < 0 ? saved.back : '#/';
+  history.replaceState(null, '', location.pathname + location.search + back);
+  if(!q.get('state') || q.get('state') !== saved.st) return;
+  if(q.get('error')){
+    SM.needLogin = true; saveSM();
+    if(!saved.silent) SYNC.flash = q.get('error') === 'access_denied' ? 'ログインを取りやめました' : 'ログインできませんでした（' + q.get('error') + '）';
+    return;
+  }
+  // 確認画面でドライブのチェックを外されると、トークンは来るが読み書きできない
+  if((q.get('scope') || '').indexOf('drive.appdata') < 0){
+    SYNC.flash = 'Google ドライブへのアクセスが許可されませんでした。ログインの確認画面で、ドライブの項目にチェックを入れてください';
+    return;
+  }
+  SM.token = q.get('access_token');
+  SM.exp = Date.now() + (Math.max(60, +q.get('expires_in') || 3600) - 120) * 1000;
+  SM.signedIn = true; SM.needLogin = false; saveSM();
+  SYNC.justLoggedIn = true;
+}
+/** この端末の同期をやめる。トークンの失効（revoke）はしない。
+ *  OAuth クライアントを lab-desk などと共有しているため、失効させると
+ *  そちらのアプリまでログアウトされてしまう。 */
+function logout(){
+  clearTimeout(SYNC.timer);
+  SM = {}; saveSM();
+  setSyncState('off');
+  toast('この端末の同期をやめました。データはこの端末にもクラウドにも残っています');
+}
+
+/* ---- Google ドライブ API ---- */
+var DRIVE = 'https://www.googleapis.com/drive/v3/files', UPLOAD = 'https://www.googleapis.com/upload/drive/v3/files';
+function gfetch(url, opts){
+  opts = opts || {};
+  opts.headers = Object.assign({ Authorization:'Bearer ' + SM.token }, opts.headers || {});
+  return fetch(url, opts).then(r => {
+    if(!r.ok){ const e = new Error('Google ドライブ ' + r.status); e.status = r.status; throw e; }
+    return r;
+  });
+}
+function driveList(){
+  const u = DRIVE + '?spaces=appDataFolder&pageSize=100&q=' + encodeURIComponent("name='" + SYNC_FILE + "'") +
+            '&fields=' + encodeURIComponent('files(id,name,modifiedTime)');
+  return gfetch(u).then(r => r.json()).then(j => j.files || []);
+}
+function driveGet(id){ return gfetch(DRIVE + '/' + id + '?alt=media'); }
+function driveCreate(name, body){
+  const b = 'edugift' + uid();
+  const meta = JSON.stringify({ name, parents:['appDataFolder'] });
+  const blob = new Blob(['--' + b + '\r\nContent-Type: application/json; charset=UTF-8\r\n\r\n' + meta +
+    '\r\n--' + b + '\r\nContent-Type: application/json\r\n\r\n', body, '\r\n--' + b + '--']);
+  return gfetch(UPLOAD + '?uploadType=multipart&fields=id',
+    { method:'POST', headers:{ 'Content-Type':'multipart/related; boundary=' + b }, body:blob }).then(r => r.json());
+}
+function driveUpdate(id, body){
+  return gfetch(UPLOAD + '/' + id + '?uploadType=media', { method:'PATCH', headers:{ 'Content-Type':'application/json' }, body });
+}
+function driveDelete(id){ return gfetch(DRIVE + '/' + id, { method:'DELETE' }).catch(e => { if(e.status !== 404) throw e; }); }
+function driveAbout(){
+  return gfetch('https://www.googleapis.com/drive/v3/about?fields=user(emailAddress,displayName)').then(r => r.json());
+}
+
+/* ---- 同期本体 ---- */
+/** 編集フォームを開いている・入力欄にカーソルがあるときは、他端末の変更を流し込まない */
+function uiBusy(){
+  if(editingC || editingS) return true;
+  const a = document.activeElement;
+  return !!(a && a.closest && a.closest('.wrap') && /^(INPUT|SELECT|TEXTAREA)$/.test(a.tagName));
+}
+function syncSoon(ms){
+  if(!SM.signedIn || SYNC.applying) return;
+  clearTimeout(SYNC.timer);
+  SYNC.timer = setTimeout(() => syncNow(false), ms == null ? 3000 : ms);
+}
+function syncNow(interactive){
+  if(!SM.signedIn){ if(interactive) login(false); return Promise.resolve(); }
+  if(!tokenOK()){ if(interactive) login(false); else setSyncState('login'); return Promise.resolve(); }
+  if(!navigator.onLine){ setSyncState('offline'); return Promise.resolve(); }
+  if(SYNC.running){ SYNC.again = true; return Promise.resolve(); }
+  SYNC.running = true; setSyncState('syncing');
+  let changed = false;
+  return driveList().then(files => {
+    let remote = null, remoteStr = '';
+    return files.reduce((pr, fl) => pr.then(() =>
+      driveGet(fl.id).then(r => r.json()).then(p => {
+        const d = fromPayload(p);
+        remote = remote ? mergeState(remote, d) : d;   // 万一2つできていたら両方を合わせる
+      })), Promise.resolve()).then(() => {
+      if(remote){
+        remoteStr = syncPayload(remote);
+        stampChanges();
+        const m = mergeState(state, remote);
+        if(syncPayload(m) !== syncPayload(state)){
+          if(uiBusy()){ const e = new Error('busy'); e.busy = true; throw e; }
+          SYNC.applying = true;
+          state = m;
+          rebuildShadow(); save();
+          SYNC.applying = false;
+          changed = true;
+        }
+      }
+      const mine = syncPayload(state);
+      let w = null;
+      if(!files.length) w = driveCreate(SYNC_FILE, mine);
+      else if(mine !== remoteStr || files.length > 1) w = driveUpdate(files[0].id, mine);
+      return Promise.resolve(w).then(() => Promise.all(files.slice(1).map(x => driveDelete(x.id))));
+    });
+  }).then(() => {
+    SM.last = Date.now(); saveSM();
+    setSyncState('ok');
+    if(changed) render();
+  }).catch(e => {
+    SYNC.applying = false;
+    if(e.busy){ setSyncState('ok'); syncSoon(4000); }
+    else if(e.status === 401 || e.status === 403){ SM.token = ''; SM.exp = 0; saveSM(); setSyncState('login'); }
+    else if(!navigator.onLine) setSyncState('offline');
+    else setSyncState('error', e.message || '通信エラー');
+  }).then(() => {
+    SYNC.running = false;
+    if(SYNC.again){ SYNC.again = false; syncSoon(500); }
+  });
+}
+function syncStartup(){
+  if(SYNC.flash){ toast(SYNC.flash, 5200); SYNC.flash = ''; }
+  if(!SM.signedIn){ renderSync(); return; }
+  if(SYNC.justLoggedIn){
+    SYNC.justLoggedIn = false;
+    driveAbout().then(a => { if(a.user){ SM.email = a.user.emailAddress; SM.name = a.user.displayName; saveSM(); renderSync(); } }).catch(() => {});
+    toast('ログインしました。同期します');
+    syncNow(false);
+    return;
+  }
+  if(tokenOK()){ syncNow(false); return; }
+  // トークン切れ（約1時間）：オンラインなら Google に黙って取り直しに行く（10分に1回まで）
+  let last = 0;
+  try{ last = +(localStorage.getItem(SILENT_KEY) || 0); }catch(e){}
+  if(navigator.onLine && !SM.needLogin && Date.now() - last > 10 * 60000){
+    try{ localStorage.setItem(SILENT_KEY, String(Date.now())); }catch(e){}
+    login(true);
+  }else setSyncState('login');
+}
+
+/* ---- 表示 ---- */
+function agoLabel(t){
+  const m = Math.round((Date.now() - t) / 60000);
+  if(m < 1) return 'たった今';
+  if(m < 60) return m + '分前';
+  const h = Math.round(m / 60);
+  if(h < 24) return h + '時間前';
+  return fmtDate(isoOf(new Date(t)));
+}
+function syncLabel(){
+  return {
+    off:'同期していません',
+    ok:'同期済み' + (SM.last ? '（' + agoLabel(SM.last) + '）' : ''),
+    syncing:'同期中…',
+    login:'ログインの有効期限が切れました',
+    error:'同期できませんでした：' + SYNC.detail,
+    offline:'オフライン（つながったら同期します）'
+  }[SYNC.state] || '';
+}
+function setSyncState(st, detail){ SYNC.state = st; SYNC.detail = detail || ''; renderSync(); }
+function renderSync(){
+  const chip = $('homeSync');
+  if(chip){
+    if(!SM.signedIn){
+      chip.className = 'syncchip';
+      chip.innerHTML = '<a href="#/data">Google でログインすると、パソコン・iPad・iPhone で同じデータを使えます</a>';
+    }else{
+      chip.className = 'syncchip ' + SYNC.state;
+      chip.innerHTML = '<span class="dot"></span><span>' + esc(syncLabel()) + '</span>' +
+        (SYNC.state === 'login' ? '<button class="mini" data-sync="login">ログイン</button>' : '');
+    }
+  }
+  const body = $('syncBody');
+  if(!body) return;
+  if(!SM.signedIn){
+    body.innerHTML =
+      '<p style="margin:0 0 12px">Google アカウントでログインすると、パソコン・iPad・iPhone で同じデータを使えます。' +
+      'データはあなたの Google ドライブの「アプリ専用領域」に保存され、ドライブの画面には出ません。ほかの人やほかのアプリからは見えません。</p>' +
+      '<div class="rows">' +
+        '<div class="row"><span class="l">はじめて使うとき</span><span class="r">データの入っている端末で先にログインし、そのあとほかの端末でログインしてください</span></div>' +
+        '<div class="row"><span class="l">両方にデータがある場合</span><span class="r">合わせて1つにします。同じ支出を別々に入れていると二重になるので、その場合は片方を削除してください</span></div>' +
+      '</div>' +
+      '<div class="syncbtns"><button class="primary" data-sync="login">Google でログイン</button></div>';
+    return;
+  }
+  body.innerHTML =
+    '<div class="syncacct"><div><div class="who">' + esc(SM.email || 'Google アカウント') + '</div>' +
+      '<div class="st ' + SYNC.state + '">' + esc(syncLabel()) + '</div></div></div>' +
+    '<div class="hint">変更は数秒後に自動で送られ、アプリを開いたときにほかの端末の変更を取り込みます。' +
+      'ログインの有効期限は約1時間で、切れたら次に開いたとき自動で取り直します。</div>' +
+    '<div class="syncbtns">' +
+      (SYNC.state === 'login' ? '<button class="primary" data-sync="login">もう一度ログイン</button>'
+                              : '<button class="primary" data-sync="now">今すぐ同期</button>') +
+      '<button data-sync="logout">ログアウト</button>' +
+    '</div>';
+}
+let toastTimer = 0;
+function toast(msg, ms){
+  const t = $('toast'); if(!t) return;
+  t.textContent = msg; t.hidden = false;
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => { t.hidden = true; }, ms || 3200);
+}
+document.addEventListener('click', e => {
+  const b = e.target.closest && e.target.closest('[data-sync]');
+  if(!b) return;
+  const act = b.getAttribute('data-sync');
+  if(act === 'login') login(false);
+  else if(act === 'now') syncNow(true);
+  else if(act === 'logout'){
+    if(confirm('この端末の同期をやめますか？\n\nデータはこの端末にもクラウドにも残ります。')) logout();
+  }
+});
+document.addEventListener('visibilitychange', () => {
+  if(!SM.signedIn) return;
+  if(document.visibilityState === 'visible') syncSoon(300);
+  else if(tokenOK() && !SYNC.running) syncNow(false);   // 閉じる前に送っておく
+});
+addEventListener('online', () => syncSoon(500));
+setInterval(() => { if(SM.signedIn && SYNC.state === 'ok') renderSync(); }, 60000);   //「〇分前」を更新
+// ==== SYNC-END ====
 
 // ---- Service Worker（オフライン対応）----
 function showUpdate(worker){
@@ -1607,6 +2086,12 @@ $("themeSwitch").addEventListener("click", e=>{
 }
 
 applyTheme();
+// Google から戻ってきたところなら、URL の # に入ったトークンを受け取って元のページのハッシュに戻す。
+// ページ切り替えもハッシュを使うので、必ずルーターより先に呼ぶ。
+takeOAuthReturn();
+// 読み込んだ直後の状態を「変更なし」の基準にする。これより前に保存すると
+// 全記録に今の時刻が押され、他端末の新しい変更を古い内容で上書きしてしまう。
+rebuildShadow();
 buildNav();
 buildTrainingLinks();
 // 予定フラグを持たない古いデータは、日付から推測した結果をここで一度だけ書き戻す。
@@ -1617,6 +2102,8 @@ $("cDate").value = today();
 $("sDate").value = today();
 render();
 route();
+renderSync();
+syncStartup();
 })();
 </script>
 </body>
